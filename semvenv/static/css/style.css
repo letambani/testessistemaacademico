@@ -1,0 +1,241 @@
+:root{
+  --azul: #0B3353;
+  --vermelho: #C62828;
+  --branco: #FFFFFF;
+  --muted: rgba(11,51,83,0.65);
+  --card-radius: 12px;
+}
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+
+/* Page */
+body {
+  background: linear-gradient(180deg,var(--branco) 0%, #fbfbfb 100%);
+  color: var(--azul);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  padding-bottom: 40px;
+  margin: 0;
+}
+
+/* Navbar */
+.nav-logo {
+  width: 56px;
+  height: auto;
+  object-fit: contain;
+  padding: 6px;
+  background: #fff;
+  border-radius: 8px;
+
+  /* Destaca fortemente sem "estragar" o visual */
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+.navbar-brand { color: var(--branco); font-weight:700; }
+
+/* Cards */
+.card {
+  border-radius: var(--card-radius);
+  box-shadow: 0 8px 26px rgba(11,51,83,0.06);
+  border: 1px solid rgba(11,51,83,0.06);
+}
+.card-header {
+  background: linear-gradient(90deg, var(--azul), #09283f);
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-top-left-radius: var(--card-radius);
+  border-top-right-radius: var(--card-radius);
+}
+
+/* Form labels */
+.form-label { font-weight: 600; color: var(--azul); }
+
+/* Filters area */
+#filtersArea {
+  max-height: 220px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--branco);
+  padding: 10px;
+  border: 1px dashed rgba(11,51,83,0.06);
+}
+
+/* Buttons */
+.btn-primary {
+  background: var(--azul);
+  border: 0;
+  color: var(--branco);
+  font-weight: 700;
+}
+.btn-primary:hover { opacity: .95; }
+
+.btn-outline-primary {
+  color: var(--azul);
+  border-color: rgba(11,51,83,0.12);
+  background: transparent;
+  font-weight:700;
+}
+.btn-outline-primary:hover {
+  background: var(--vermelho);
+  color: var(--branco);
+  border-color: var(--vermelho);
+}
+
+/* Grafico container cards */
+#graficoContainer > .card { border: 1px solid rgba(11,51,83,0.06); }
+
+/* Small */
+.small-note { font-size: 13px; color: var(--muted); }
+
+.footer-ilab {
+    background: #09283f;
+    color: var(--branco);
+    /* opacity: 0.75;   */
+    transition: opacity .3s ease;
+    width: 100%;
+    position: relative;
+    padding: 15px 0;
+}
+
+
+.footer-ilab:hover {
+    opacity: 0.92;
+}
+
+.footer-ilab .footer-link {
+    color: var(--branco);
+    font-size: 15px;
+    opacity: 0.85;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: .3s ease;
+}
+
+.footer-ilab .footer-link:hover {
+    opacity: 1;
+    border-bottom: 1px solid var(--branco);
+}
+
+.footer-ilab .footer-copy {
+    font-size: 13px;
+    opacity: 0.65;
+    margin: 0;
+}
+/* Responsive tweaks */
+@media (max-width: 767px) {
+  .nav-logo { display:none; }
+  .card { margin-bottom: 12px; }
+  .navbar-brand { font-size: 1rem; }
+}
+
+/* CSS DE QUEM_SOMOS.HTML */
+.team-card {
+    background: #fff;
+    border-radius: 14px;
+    transition: .3s ease;
+}
+
+.team-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+
+.team-photo {
+    width: 95px;
+    height: 95px;
+    border-radius: 50%;
+    border: 3px solid #0B3353;
+    object-fit: cover;
+}
+
+.team-role {
+    font-size: 15px;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.linkedin-btn {
+    font-size: 26px;
+    color: #0e76a8;
+    transition: .3s ease;
+    text-decoration: none;
+}
+
+.linkedin-btn:hover {
+    color: #0b5c82;
+}
+
+/* --- ESTILOS DO CHATBOT --- */
+#chatbot-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #007bff;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+#chatbot-window {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 350px;
+    height: 450px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    display: flex; /* Mudamos via JavaScript depois */
+    flex-direction: column;
+    z-index: 1000;
+}
+
+#chat-header {
+    background: #007bff;
+    color: white;
+    padding: 10px;
+    border-radius: 10px 10px 0 0;
+    font-weight: bold;
+}
+
+#chat-messages {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#chat-input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background: #f8f9fa;
+    border-radius: 0 0 10px 10px;
+}
+
+#user-input {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 5px;
+}

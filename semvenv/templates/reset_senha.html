@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FMP — Redefinir Senha</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --branco: #FFFFFF;
+      --vermelho: #C62828;
+      --azul: #0B3353;
+      --radius-xl: 14px;
+      --card-width: 360px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:"Inter",system-ui;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:32px;background:linear-gradient(180deg,var(--branco) 0%,#fbfbfb 100%);color:var(--azul);}
+    .center-wrap{display:flex;gap:32px;align-items:center;justify-content:center;flex-direction:column;width:100%;max-width:1100px;}
+    .logo{display:flex;align-items:center;gap:16px;justify-content:center;flex-direction:column;}
+    .logo img{width:260px;height:auto;display:block;object-fit:contain;}
+    .brand-sub{margin-top:6px;color:var(--azul);font-weight:600;letter-spacing:0.2px;}
+    .card{width:var(--card-width);background:var(--branco);border-radius:var(--radius-xl);box-shadow:0 10px 30px rgba(11,51,83,0.08);padding:22px;border:1px solid rgba(11,51,83,0.06);}
+    .card h2{margin:0 0 10px 0;font-size:22px;color:var(--azul);}
+    .form-group{margin-bottom:14px}
+    label{display:block;font-size:13px;color:var(--azul);margin-bottom:6px;font-weight:600;}
+    input[type="email"],input[type="password"]{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(11,51,83,0.15);outline:none;font-size:14px;transition:box-shadow .15s,border-color .15s;background:#fff;}
+    input:focus{border-color:var(--azul);box-shadow:0 6px 20px rgba(11,51,83,0.06);}
+    .btn{display:inline-block;width:100%;padding:12px 14px;font-size:15px;border-radius:12px;border:0;cursor:pointer;font-weight:700;transition:transform .08s ease,box-shadow .08s;}
+    .btn-primary{background:var(--azul);color:var(--branco);box-shadow:0 8px 20px rgba(11,51,83,0.08);}
+    .btn-primary:hover{opacity:.95;}
+    .forgot{font-size:13px;color:var(--azul);text-decoration:none;font-weight:600;}
+    .forgot:hover{color:var(--vermelho);}
+    .small-note{font-size:13px;color:rgba(11,51,83,0.7);text-align:center;margin-top:8px;}
+    @media(min-width:900px){
+  .center-wrap{
+      flex-direction:row;
+  }
+
+  .logo{
+      width:460px;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <main class="center-wrap" role="main">
+    <section class="logo">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo FMP — Faculdade Municipal de Palhoça" />
+      <div class="brand-sub">
+        <div style="font-size:18px;font-weight:700;color:var(--azul)">FMP</div>
+        <div style="font-size:13px;color:rgba(11,51,83,0.8);margin-top:2px">Faculdade Municipal de Palhoça</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Redefinir Senha</h2>
+
+      <form method="POST">
+        <div class="form-group">
+          <label for="senha">Nova Senha</label>
+          <input id="senha" name="senha" type="password" placeholder="Digite sua nova senha" required />
+        </div>
+
+        <div class="form-group">
+          <label for="confirmar_senha">Confirmar Nova Senha</label>
+          <input id="confirmar_senha" name="confirmar_senha" type="password" placeholder="Confirme sua nova senha" required />
+        </div>
+
+        <button class="btn btn-primary" type="submit">Salvar nova senha</button>
+
+        <div class="small-note" style="margin-top:14px;">
+          <a href="{{ url_for('login') }}" class="forgot">Voltar ao login</a>
+        </div>
+      </form>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <ul style="margin-top:10px;list-style:none;padding:0;">
+          {% for category, msg in messages %}
+<li style="color:{% if category == 'danger' %}#c00{% elif category == 'success' %}#0a0{% else %}#C62828{% endif %}; font-size:14px;">
+  {{ msg }}
+</li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+    </section>
+  </main>
+</body>
+</html>

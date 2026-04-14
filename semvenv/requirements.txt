@@ -1,0 +1,29 @@
+Flask==3.0.3
+Flask-Login==0.6.3
+Flask-Mail==0.9.1
+Flask-Bcrypt==1.0.1
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-Admin==1.6.1
+
+itsdangerous==2.2.0
+
+SQLAlchemy==2.0.34
+alembic==1.13.2
+
+email-validator==2.1.1
+
+numpy==1.26.4
+pandas==2.2.3
+
+plotly==5.24.1
+
+python-dotenv==1.0.1
+
+gunicorn==22.0.0
+psycopg2-binary==2.9.9
+
+# se você usa MySQL, troque pelo abaixo:
+# mysqlclient==2.2.4
+
+# se usa SQLite puro, NÃO precisa de nada extra
