@@ -15,6 +15,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: path.resolve(__dirname, "index.html"),
+        cadastro: path.resolve(__dirname, "cadastro.html"),
         analises: path.resolve(__dirname, "index-1.html"),
       },
     },

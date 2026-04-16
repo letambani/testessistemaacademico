@@ -245,7 +245,7 @@
 
         <div>
           <button class="btn btn-primary" type="submit">Entrar</button>
-          <a href="http://127.0.0.1:5050/cadastro" class="btn btn-outline" role="button" id="linkCadastro">Cadastrar</a>
+          <a href="./cadastro.html" class="btn btn-outline" role="button" id="linkCadastro">Cadastrar</a>
         </div>
 
         <div class="small-note" style="margin-top:12px">
@@ -275,9 +275,7 @@
     (function () {
       var o = fmpBackendOrigin();
       var forgot = document.getElementById('linkForgot');
-      var cad = document.getElementById('linkCadastro');
       if (forgot) forgot.href = o + '/recuperar_senha';
-      if (cad) cad.href = o + '/cadastro';
     })();
 
     document.getElementById('loginForm').addEventListener('submit', function (e) {
