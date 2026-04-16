@@ -71,6 +71,10 @@ Saída em `frontend/dist/`. Para desenvolvimento local com `npm run preview`, us
 
 Se ainda aparecer o README, force um novo push ou **Run workflow** manual.
 
+### 404 em `/cadastro.html` ou `/index-1.html` no Pages
+
+Com o site publicado em subcaminho (`/testessistemaacademico/`), links relativos precisam de `<base href="...">`. O build do Vite injeta isso automaticamente. Use sempre o workflow **GitHub Actions** com `VITE_BASE=/testessistemaacademico/` (já no workflow).
+
 ## Testes (backend)
 
 ```bash

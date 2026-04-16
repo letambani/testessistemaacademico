@@ -275,7 +275,7 @@
         var em = document.getElementById('email');
         if (em && em.value) sessionStorage.setItem('fmp_login_email', em.value.trim());
       } catch (err) { /* ignore */ }
-      window.location.href = new URL('index-1.html', window.location.href).href;
+      window.location.href = new URL('index-1.html', document.baseURI).href;
     });
   </script>
 </body>

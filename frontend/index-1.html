@@ -16,10 +16,10 @@
     (function () {
       try {
         if (sessionStorage.getItem("fmp_gh_pages_auth") !== "1") {
-          location.replace(new URL("index.html", location.href).href);
+          location.replace(new URL("index.html", document.baseURI).href);
         }
       } catch (e) {
-        location.replace(new URL("index.html", location.href).href);
+        location.replace(new URL("index.html", document.baseURI).href);
       }
     })();
   </script>
@@ -400,7 +400,7 @@
             sessionStorage.removeItem("fmp_gh_pages_auth");
             sessionStorage.removeItem("fmp_login_email");
           } catch (x) {}
-          location.href = new URL("index.html", location.href).href;
+          location.href = new URL("index.html", document.baseURI).href;
         });
       }
     })();
