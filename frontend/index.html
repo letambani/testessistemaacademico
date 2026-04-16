@@ -4,6 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Origem do Flask (SPA). Ajuste se o backend estiver em outro host/porta. -->
+  <meta name="fmp-backend-origin" content="http://127.0.0.1:5050" />
   <title>FMP — Login</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -238,12 +240,12 @@
 
         <div class="row-between" style="margin-bottom:12px;">
           <div></div>
-          <a href="#" class="forgot" id="linkForgot">Esqueci a senha</a>
+          <a href="http://127.0.0.1:5050/recuperar_senha" class="forgot" id="linkForgot">Esqueci a senha</a>
         </div>
 
         <div>
           <button class="btn btn-primary" type="submit">Entrar</button>
-          <a href="#" class="btn btn-outline" role="button" id="linkCadastro">Cadastrar</a>
+          <a href="http://127.0.0.1:5050/cadastro" class="btn btn-outline" role="button" id="linkCadastro">Cadastrar</a>
         </div>
 
         <div class="small-note" style="margin-top:12px">
@@ -265,6 +267,19 @@
       }
     });
 
+    function fmpBackendOrigin() {
+      var m = document.querySelector('meta[name="fmp-backend-origin"]');
+      var o = (m && m.content) ? String(m.content).trim().replace(/\/$/, '') : 'http://127.0.0.1:5050';
+      return o;
+    }
+    (function () {
+      var o = fmpBackendOrigin();
+      var forgot = document.getElementById('linkForgot');
+      var cad = document.getElementById('linkCadastro');
+      if (forgot) forgot.href = o + '/recuperar_senha';
+      if (cad) cad.href = o + '/cadastro';
+    })();
+
     document.getElementById('loginForm').addEventListener('submit', function (e) {
       e.preventDefault();
       if (!this.reportValidity()) return;
@@ -274,13 +289,6 @@
         if (em && em.value) sessionStorage.setItem('fmp_login_email', em.value.trim());
       } catch (err) { /* ignore */ }
       window.location.href = new URL('index-1.html', window.location.href).href;
-    });
-
-    document.getElementById('linkForgot').addEventListener('click', function (e) {
-      e.preventDefault();
-    });
-    document.getElementById('linkCadastro').addEventListener('click', function (e) {
-      e.preventDefault();
     });
   </script>
 </body>

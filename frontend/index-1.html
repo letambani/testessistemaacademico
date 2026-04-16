@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <title>Análises • FMP - Faculdade Municipal de Palhoça</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="fmp-backend-origin" content="http://127.0.0.1:5050" />
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="./css/style.css">
@@ -307,7 +308,7 @@
 
   <footer class="footer-ilab mt-auto">
     <div class="container py-3 text-center">
-      <a href="#" class="footer-link" id="fmpFooterQuemSomos">Quem somos</a>
+      <a href="http://127.0.0.1:5050/quem_somos" class="footer-link" id="fmpFooterQuemSomos">Quem somos</a>
       <p class="footer-copy mt-2 mb-0">
         © <span id="fmpYear"></span> iLab — Sistema de Processamento e Análises.
       </p>
@@ -375,10 +376,14 @@
 
   <script>
     (function () {
+      function fmpBackendOrigin() {
+        var m = document.querySelector('meta[name="fmp-backend-origin"]');
+        return (m && m.content) ? String(m.content).trim().replace(/\/$/, "") : "http://127.0.0.1:5050";
+      }
       var y = document.getElementById("fmpYear");
       if (y) y.textContent = String(new Date().getFullYear());
       var q = document.getElementById("fmpFooterQuemSomos");
-      if (q) q.addEventListener("click", function (e) { e.preventDefault(); });
+      if (q) q.href = fmpBackendOrigin() + "/quem_somos";
       var em = null;
       try { em = sessionStorage.getItem("fmp_login_email"); } catch (x) {}
       if (em) {
