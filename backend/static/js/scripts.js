@@ -1,4 +1,4 @@
-// scripts.js (index.html)
+// scripts.js (index-1.html — módulo de análises)
 // requer Plotly e Bootstrap bundle pré-carregados.
 
 // util

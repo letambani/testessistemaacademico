@@ -49,10 +49,10 @@ def _mock_response_ok(payload):
     return R()
 
 
-def test_home_redirects_to_login(client):
+def test_home_shows_login(client):
     r = client.get("/", follow_redirects=False)
-    assert r.status_code == 302
-    assert "/login" in r.location
+    assert r.status_code == 200
+    assert b"FMP" in r.data or b"Login" in r.data
 
 
 def test_quem_somos_ok(client):

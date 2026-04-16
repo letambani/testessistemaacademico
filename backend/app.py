@@ -182,7 +182,8 @@ def _serializer():
 
 @app.route('/')
 def home():
-    return redirect(url_for('login'))
+    """Entrada principal do sistema: tela de login (após autenticação, fluxo em /analises → index-1)."""
+    return render_template('login.html', email='')
 
 # ----- LOGIN -----
 @app.route('/login', methods=['GET', 'POST'])

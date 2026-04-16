@@ -387,7 +387,7 @@ def load_csv(filename):
 @login_required
 def analises():
     files = list_uploaded_files()
-    return render_template('index.html', files=files)
+    return render_template('index-1.html', files=files)
 
 
 # ---------------- API: COLUNAS ----------------
