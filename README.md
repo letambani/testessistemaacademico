@@ -61,16 +61,15 @@ Saída em `frontend/dist/`. Para desenvolvimento local com `npm run preview`, us
 
 ### O site abre o README em vez da tela de login?
 
-Isso acontece quando o Pages publica a **árvore do repositório** (branch `main` na raiz ou pasta `/docs`), onde **não existe** `index.html` na origem publicada — o GitHub acaba exibindo o `README.md`.
+**Se o Pages publicar a branch na raiz** (`main` / `(root)`), antes não havia `index.html` na raiz — o GitHub mostrava o `README.md`. Agora existe um **`index.html` na raiz do repositório** que redireciona para **`frontend/index.html`** (login).
 
-**Correção:**
+**Recomendado (build completo, assets corretos):** em **Settings → Pages → Source**, use **GitHub Actions**. O workflow publica o conteúdo de **`frontend/dist`** (Vite com `VITE_BASE` para o nome do repositório).
 
-1. No repositório: **Settings → Pages → Build and deployment**.
-2. Em **Source**, selecione **GitHub Actions** (não “Deploy from a branch”).
-3. Confirme que o workflow **Deploy frontend to GitHub Pages** concluiu com sucesso em **Actions** (último push em `main`).
-4. Aguarde alguns minutos e abra de novo: `https://letambani.github.io/testessistemaacademico/` — deve carregar o **`index.html`** gerado em `frontend/dist` (login).
+1. **Settings → Pages → Build and deployment** → **Source: GitHub Actions**.
+2. Confira em **Actions** se **Deploy frontend to GitHub Pages** terminou com sucesso.
+3. URL: `https://letambani.github.io/testessistemaacademico/` — deve carregar o login do **dist** (ou, com deploy por branch, o redirecionamento da raiz para `frontend/index.html`).
 
-Se a origem já for **GitHub Actions** e ainda aparecer o README, abra **Actions**, verifique se o job falhou, e em **Settings → Pages** veja qual deploy está ativo (às vezes é preciso um novo push ou **Run workflow** manual).
+Se ainda aparecer o README, force um novo push ou **Run workflow** manual.
 
 ## Testes (backend)
 

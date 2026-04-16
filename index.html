@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FMP — Redirecionando</title>
+  <meta http-equiv="refresh" content="0; url=frontend/index.html" />
+  <script>
+    (function () {
+      location.replace(new URL("frontend/index.html", window.location.href).href);
+    })();
+  </script>
+</head>
+<body>
+  <p style="font-family: system-ui, sans-serif; padding: 2rem; color: #0b3353">
+    Se não redirecionar, <a href="frontend/index.html">abra o login</a>.
+  </p>
+</body>
+</html>
