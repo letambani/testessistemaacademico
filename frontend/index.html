@@ -240,7 +240,7 @@
 
         <div class="row-between" style="margin-bottom:12px;">
           <div></div>
-          <a href="http://127.0.0.1:5050/recuperar_senha" class="forgot" id="linkForgot">Esqueci a senha</a>
+          <a href="./recuperar_senha.html" class="forgot" id="linkForgot">Esqueci a senha</a>
         </div>
 
         <div>
@@ -266,17 +266,6 @@
         this.textContent = 'Mostrar';
       }
     });
-
-    function fmpBackendOrigin() {
-      var m = document.querySelector('meta[name="fmp-backend-origin"]');
-      var o = (m && m.content) ? String(m.content).trim().replace(/\/$/, '') : 'http://127.0.0.1:5050';
-      return o;
-    }
-    (function () {
-      var o = fmpBackendOrigin();
-      var forgot = document.getElementById('linkForgot');
-      if (forgot) forgot.href = o + '/recuperar_senha';
-    })();
 
     document.getElementById('loginForm').addEventListener('submit', function (e) {
       e.preventDefault();

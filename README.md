@@ -6,7 +6,7 @@ Monorepo com **frontend** (React + Vite, estático) e **backend** (Flask/Python)
 
 | Pasta / arquivo | Conteúdo |
 |-----------------|----------|
-| `frontend/` | `index.html` (login), `cadastro.html` (espelho de `backend/templates/cadastro.html`), `index-1.html` (análises). Build em `frontend/dist/`. |
+| `frontend/` | `index.html`, `cadastro.html`, `recuperar_senha.html` (espelhos dos templates Flask), `index-1.html`. Build em `frontend/dist/`. |
 | `backend/` | Flask (`app.py`, `faculdade_app.py`), templates HTML, `static/`, modelos, testes, `test_data/`. |
 | `run_stack.py` | Na raiz: delega para `backend/run_stack.py` (sobe API da faculdade + SPA Flask conforme script). |
 | `requirements.txt` | Na raiz: inclui `backend/requirements.txt`. |
@@ -54,7 +54,7 @@ Saída em `frontend/dist/`. Para desenvolvimento local com `npm run preview`, us
 
 - **O que é publicado:** apenas o conteúdo estático gerado em `frontend/dist` (HTML, JS, CSS, assets). O workflow faz o build com `VITE_BASE=/testessistemaacademico/`.
 - **Fluxo no site estático:** `index.html` (login). Após **Entrar**, **`index-1.html`** (mesmo layout que `backend/templates/index-1.html`). Sessão em `sessionStorage` (`fmp_gh_pages_auth`); **Sair** volta ao login. Em dev: `http://localhost:5173/index-1.html` após login (o proxy Vite encaminha `/api` ao Flask se estiver em `5050`).
-- **Cadastro:** o botão **Cadastrar** no login abre **`cadastro.html`** (mesmo conteúdo visual do template Flask). O **envio** do formulário faz POST para `{fmp-backend-origin}/cadastro` — é preciso o Flask ativo (`python run_stack.py`). **Esqueci a senha** e **Quem somos** continuam indo direto ao Flask (`/recuperar_senha`, `/quem_somos`). Ajuste a meta **`fmp-backend-origin`** se o backend não estiver em `http://127.0.0.1:5050`.
+- **Cadastro / recuperar senha:** **Cadastrar** → `cadastro.html`; **Esqueci a senha** → `recuperar_senha.html` (equivalentes aos templates em `backend/templates/`). Os envios fazem POST para `{fmp-backend-origin}/cadastro` e `/recuperar_senha`. **Quem somos** no painel continua apontando ao Flask. Suba o backend com `python run_stack.py` e ajuste **`fmp-backend-origin`** se necessário.
 - **O que não roda no Pages:** Python/Flask, SQLite, uploads e qualquer rota de API. No site estático, chamadas a `/api/...` não têm servidor Flask atrás; a interface pode carregar, mas **dados em tempo real e integrações com o backend exigem o backend em execução** (local ou hospedado) ou uma URL de API configurável no futuro.
 - **Configuração no GitHub:** em **Settings → Pages → Build and deployment**, escolha **GitHub Actions** como origem. O workflow `Deploy frontend to GitHub Pages` dispara em push para `main`.
 - **URL típica do site de projeto:** `https://letambani.github.io/testessistemaacademico/` (caminho base `/testessistemaacademico/` já considerado no build).

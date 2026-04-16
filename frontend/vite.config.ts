@@ -16,6 +16,7 @@ export default defineConfig({
       input: {
         index: path.resolve(__dirname, "index.html"),
         cadastro: path.resolve(__dirname, "cadastro.html"),
+        recuperar: path.resolve(__dirname, "recuperar_senha.html"),
         analises: path.resolve(__dirname, "index-1.html"),
       },
     },
