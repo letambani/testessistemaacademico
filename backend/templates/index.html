@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <title>Análises • FMP - Faculdade Municipal de Palhoça</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+  <nav class="navbar shadow-sm mb-4" style="background: linear-gradient(90deg,#0B3353 0%, #09283f 100%);">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-3">
+        <img src="{{ url_for('static', filename='logo-sem-fundo.png') }}" alt="FMP" class="nav-logo">
+        <div class="text-white fw-bold navbar-brand">Módulo de Análises</div>
+
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <a href="http://127.0.0.1:5001/matricula-rematricula" target="_blank" class="btn btn-primary btn-sm ms-2">📝
+          Matrícula</a>
+        <a id="btnTutorial" class="btn btn-outline-primary ms-2 text-white">❓ Como usar</a>
+        <div class="text-white me-3 small">
+
+          Bem-vindo, <strong>{{ current_user.nome }}</strong><br>
+          <span class="muted-email">{{ current_user.email }}</span>
+        </div>
+
+        <!-- Upload button: só aparece para o usuário autorizado -->
+        {% if current_user.email == "marcelo.souza1@aluno.fmpsc.edu.br" %}
+        <button class="btn btn-warning btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#manageFilesModal">
+          📁 Gerenciar Arquivos
+        </button>
+
+        <button class="btn btn-success btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#uploadModal"
+          id="btnUploadVisible">📤 Enviar CSV</button>
+        {% endif %}
+
+        <button class="btn btn-outline-light btn-sm ms-2" id="refreshFilesBtn"
+          title="Recarregar lista de arquivos">↻</button>
+
+        <a href="{{ url_for('logout') }}" class="btn btn-link btn-sm text-white ms-2">Sair</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid">
+
+    <div class="row g-3">
+      <!-- LEFT PANEL -->
+      <!-- <aside class="col-12 col-md-2">
+        <div class="card mb-3">
+          <div class="card-header">Fonte de Dados</div>
+          <div class="card-body">
+            <label class="form-label small">Origem</label>
+            <select id="dataOrigin" class="form-select mb-3">
+              <option value="csv">Arquivos CSV</option>
+              <option value="db">Banco de Dados (API)</option>
+            </select>
+
+            <div id="csvSelectors">
+              <label class="form-label small">Arquivo base (para análise)</label>
+              <select id="arquivoSelect" class="form-select mb-2">
+                <option value="">Selecione um CSV</option>
+                {% for f in files %}
+                <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <label class="form-label small">Comparar com (opcional)</label>
+            <select id="arquivoCompare" class="form-select mb-2">
+              <option value="">(nenhum)</option>
+              {% for f in files %}
+              <option value="{{ f }}">{{ f }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div> -->
+      <aside class="col-12 col-md-2">
+        <div class="card mb-3">
+          <div class="card-header">Fonte de Dados</div>
+          <div class="card-body">
+
+            <div class="d-none">
+              <label class="form-label small">Origem</label>
+              <select id="dataOrigin" class="form-select mb-3">
+                <option value="csv" selected>Arquivos CSV</option>
+                <option value="db">Banco de Dados (API)</option>
+              </select>
+            </div>
+
+            <div id="csvSelectors">
+              <label class="form-label fw-bold small text-primary">Base de Análise</label>
+              <select id="arquivoSelect" class="form-select border-primary mb-3 shadow-sm">
+                <option value="">Selecione uma base...</option>
+                {% for f in files %}
+                <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <label class="form-label small">Comparar com (opcional)</label>
+            <select id="arquivoCompare" class="form-select mb-2">
+              <option value="">(nenhum)</option>
+              {% for f in files %}
+              <option value="{{ f }}">{{ f }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">Configuração</div>
+          <div class="card-body">
+            <label class="form-label">Coluna principal (mesma nos 2 arquivos)</label>
+            <select id="colunaSelect" class="form-select mb-2">
+              <option value="">Selecione um arquivo primeiro</option>
+            </select>
+
+            <label class="form-label">Agrupar por (opcional)</label>
+            <select id="colunaGroupBy" class="form-select mb-2">
+              <option value="">Nenhum agrupamento</option>
+            </select>
+
+            <label class="form-label">Tipo de gráfico</label>
+            <select id="tipoSelect" class="form-select mb-3">
+              <option value="bar">Barras</option>
+              <option value="pie">Pizza</option>
+              <option value="line">Linha</option>
+              <!-- <option value="histogram">Histograma</option> -->
+              <option value="texto">Relatório por extenso</option>
+
+            </select>
+
+            <div id="filtersArea" class="mb-3 small text-muted">
+              <!-- filtros dinâmicos -->
+            </div>
+
+            <button class="btn btn-primary w-100" id="btnGerar">Gerar Gráfico</button>
+          </div>
+        </div>
+
+        <div class="card mb-3 border-info shadow-sm">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-semibold">Pergunta orientada <small class="text-muted fw-normal">(opcional)</small></span>
+            <span class="badge rounded-pill bg-secondary" id="coordModeBadge" title="Alterna automaticamente conforme o uso">Modo manual</span>
+          </div>
+          <div class="card-body">
+            <p class="small text-muted mb-2 mb-md-3">
+              Perguntas frequentes de coordenadores: o sistema deduplica por <strong>e-mail</strong> (mantém o último registro por data ou maior <code>id</code>).
+              Deixe a pergunta em branco para usar apenas o modo manual acima.
+            </p>
+            <label class="form-label small mb-1" for="coordQuestionSelect">Pergunta dos coordenadores</label>
+            <select id="coordQuestionSelect" class="form-select form-select-sm mb-2" title="Escolha uma pergunta para preencher automaticamente colunas e tipo de gráfico">
+              <option value="">— Nenhuma (só modo manual) —</option>
+            </select>
+            <div class="row g-2 mb-2">
+              <div class="col-12">
+                <label class="form-label small mb-1" for="coordPeriodSelect">Período / semestre</label>
+                <select id="coordPeriodSelect" class="form-select form-select-sm" title="Filtra linhas antes da deduplicação">
+                  <option value="">Todos os períodos</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-1" for="coordCursoSelect">Curso <span class="text-muted">(opcional)</span></label>
+                <select id="coordCursoSelect" class="form-select form-select-sm" title="Restringe a um curso antes da deduplicação">
+                  <option value="">Todos os cursos</option>
+                </select>
+              </div>
+            </div>
+            <button type="button" class="btn btn-info w-100 text-white mb-2" id="btnCoordGerar" disabled>
+              <span id="btnCoordGerarLabel">Gerar resposta</span>
+              <span id="btnCoordSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status"></span>
+            </button>
+            <div id="coordHint" class="small text-secondary d-none"></div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">Comparar</div>
+          <div class="card-body">
+            <p class="small text-muted mb-2">Escolha um arquivo base (acima) e um arquivo para comparar. A comparação
+              exige que a <strong>mesma coluna</strong> exista nos dois arquivos.</p>
+            <div class="d-grid gap-2">
+              <button class="btn btn-outline-primary" id="btnGerarComparar">Gerar e Comparar</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT PANEL -->
+      <main class="col-12 col-md-10" id="secaoResultado" tabindex="-1">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Resultado</span>
+            <div>
+              <button id="btnSalvarTodos" class="btn btn-success btn-sm me-2 d-none">💾 Salvar todos</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="graficoContainer" class="d-flex flex-column gap-4">
+              <p class="text-center text-secondary">Nenhum gráfico gerado ainda.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- UPLOAD MODAL -->
+  <div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Enviar CSV</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="file" id="csvFile" accept=".csv" class="form-control">
+          <div class="form-text small mt-2">Envie apenas arquivos .csv (mesmo nome pode sobrescrever).</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-success" id="uploadBtnModal">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- GERENCIAMENTO DE ARQUIVOS -->
+  <div class="modal fade" id="manageFilesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Gerenciamento de Arquivos</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- Busca -->
+          <input type="text" id="searchFiles" class="form-control mb-3" placeholder="Pesquisar arquivo...">
+
+          <!-- Lista -->
+          <ul class="list-group" id="filesList">
+            <!-- itens gerados via JS -->
+          </ul>
+
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="footer-ilab">
+    <div class="container py-3 text-center">
+      <a href="{{ url_for('quem_somos') }}" class="footer-link">
+        Quem somos
+      </a>
+
+      <p class="footer-copy mt-2">
+        © {{ current_year }} iLab — Sistema de Processamento e Análises.
+      </p>
+    </div>
+  </footer>
+
+
+
+
+
+
+  <!-- SCRIPTS -->
+  <!-- Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+  <!-- Scripts da aplicação -->
+  <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+
+  <!-- Shepherd.js (CORRETO) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js/dist/css/shepherd.css">
+  <script src="https://cdn.jsdelivr.net/npm/shepherd.js/dist/js/shepherd.min.js"></script>
+
+  <!-- Tutorial -->
+  <script src="{{ url_for('static', filename='js/tutorial.js') }}"></script>
+
+
+
+  <div id="chatbot-button" onclick="toggleChat()">💬 Dúvidas?</div>
+
+    <div id="chatbot-window" style="display: none;">
+        <div id="chat-header">
+            Assistente da Faculdade
+            <span onclick="toggleChat()" style="cursor:pointer; float:right;">✖</span>
+        </div>
+        <div id="chat-messages"></div>
+        <div id="chat-input-area">
+            <input type="text" id="user-input" placeholder="Pergunte sobre os dados...">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleChat() {
+            const chat = document.getElementById("chatbot-window");
+            chat.style.display = chat.style.display === "none" ? "flex" : "none";
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const messages = document.getElementById("chat-messages");
+            const text = input.value;
+            
+            if (!text) return;
+
+            messages.innerHTML += `<div style="margin: 5px 0; padding: 8px; background: #e9ecef; border-radius: 5px;"><b>Você:</b> ${text}</div>`;
+            input.value = "";
+            messages.innerHTML += `<div id="loading" style="margin: 5px 0;"><i>Consultando os dados do banco... 🧠</i></div>`;
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mensagem: text })
+                });
+
+                const data = await response.json();
+                document.getElementById("loading").remove();
+                messages.innerHTML += `<div style="margin: 5px 0; padding: 8px; background: #cce5ff; border-radius: 5px;"><b>Assistente:</b> ${data.resposta}</div>`;
+                messages.scrollTop = messages.scrollHeight;
+            } catch (error) {
+                document.getElementById("loading").remove();
+                messages.innerHTML += `<div style="color: red;">Erro ao conectar com o servidor.</div>`;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <title>Análises • FMP - Faculdade Municipal de Palhoça</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="index-1-layout">
+
+  <nav class="navbar shadow-sm mb-0 fmp-nav-gradient">
+    <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+      <div class="d-flex align-items-center gap-3">
+        <img src="{{ url_for('static', filename='logo-sem-fundo.png') }}" alt="FMP" class="nav-logo">
+        <div class="text-white fw-bold navbar-brand mb-0">Módulo de Análises</div>
+      </div>
+
+      <div class="d-flex align-items-center flex-wrap gap-2 justify-content-end">
+        <a href="http://127.0.0.1:5001/matricula-rematricula" target="_blank" class="btn btn-primary btn-sm">📝 Matrícula</a>
+        <a id="btnTutorial" class="btn btn-outline-light btn-sm border-light text-white">❓ Como usar</a>
+        <div class="text-white small text-end d-none d-md-block">
+          Bem-vindo, <strong>{{ current_user.nome }}</strong><br>
+          <span class="opacity-75">{{ current_user.email }}</span>
+        </div>
+
+        {% if current_user.email == "marcelo.souza1@aluno.fmpsc.edu.br" %}
+        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#manageFilesModal">📁 Gerenciar Arquivos</button>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal" id="btnUploadVisible">📤 Enviar CSV</button>
+        {% endif %}
+
+        <button class="btn btn-outline-light btn-sm" id="refreshFilesBtn" title="Recarregar lista de arquivos">↻</button>
+        <a href="{{ url_for('logout') }}" class="btn btn-link btn-sm text-white">Sair</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid px-3 px-lg-4 py-4">
+
+    <!-- Stepper visual -->
+    <div class="row justify-content-center mb-4">
+      <div class="col-12 col-xl-10">
+        <h1 class="h4 text-center fw-semibold text-secondary mb-4">Painel de controle</h1>
+        <div class="fmp-stepper d-flex align-items-center justify-content-between gap-1 gap-sm-3" role="list" aria-label="Progresso">
+          <div class="fmp-step fmp-step-active text-center flex-grow-1" data-step="1">
+            <div class="fmp-step-circle">1</div>
+            <div class="fmp-step-label small fw-semibold mt-2">Selecionar Dados</div>
+          </div>
+          <div class="fmp-step-line flex-grow-1" aria-hidden="true"></div>
+          <div class="fmp-step text-center flex-grow-1" data-step="2">
+            <div class="fmp-step-circle">2</div>
+            <div class="fmp-step-label small fw-semibold mt-2 text-muted">Configurar</div>
+          </div>
+          <div class="fmp-step-line flex-grow-1" aria-hidden="true"></div>
+          <div class="fmp-step text-center flex-grow-1" data-step="3">
+            <div class="fmp-step-circle">3</div>
+            <div class="fmp-step-label small fw-semibold mt-2 text-muted">Gerar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Três colunas -->
+    <div class="row g-4 align-items-stretch">
+
+      <!-- PASSO 1 — Fonte -->
+      <div class="col-12 col-lg-4">
+        <div class="card h-100 fmp-card-panel border-2 shadow-sm" id="cardFonte">
+          <div class="card-header bg-white border-bottom py-3 fmp-card-head">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div>
+                <span class="badge rounded-pill fmp-badge-step mb-2">PASSO 1</span>
+                <h2 class="h6 mb-0 fw-bold text-primary-emphasis d-flex align-items-center gap-2">
+                  <span aria-hidden="true">🗄</span> Fonte de Dados
+                </h2>
+              </div>
+              <span class="text-success d-none" id="checkStep1" title="Base selecionada">✓</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <label class="form-label small fw-semibold" for="dataOrigin">Origem</label>
+            <select id="dataOrigin" class="form-select mb-3">
+              <option value="csv" selected>Arquivos CSV</option>
+              <option value="db">Banco de Dados (API)</option>
+            </select>
+
+            <div id="csvSelectors">
+              <label class="form-label small fw-bold text-primary" for="arquivoSelect">Base de Análise <span class="text-danger">*</span></label>
+              <select id="arquivoSelect" class="form-select mb-3">
+                <option value="">Selecione uma base...</option>
+                {% for f in files %}
+                <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <label class="form-label small" for="arquivoCompare">Comparar com (opcional)</label>
+            <select id="arquivoCompare" class="form-select mb-2">
+              <option value="">(nenhum)</option>
+              {% for f in files %}
+              <option value="{{ f }}">{{ f }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASSO 2 — Configuração -->
+      <div class="col-12 col-lg-4">
+        <div class="card h-100 fmp-card-panel border-2 shadow-sm" id="cardConfig">
+          <div class="card-header bg-white border-bottom py-3 fmp-card-head">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+              <div class="flex-grow-1">
+                <span class="badge rounded-pill fmp-badge-step mb-2">PASSO 2</span>
+                <h2 class="h6 mb-2 fw-bold text-primary-emphasis d-flex align-items-center gap-2">
+                  <span aria-hidden="true">⚙</span> Configuração
+                </h2>
+                <span class="badge rounded-pill bg-secondary" id="coordModeBadge" title="Alterna automaticamente conforme o uso">Modo manual</span>
+              </div>
+              <span class="text-success d-none" id="checkStep2" title="Configuração válida">✓</span>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <div class="mb-3" id="fmpBlockPergunta">
+              <label class="form-label fw-bold mb-2" for="coordQuestionSelect">Pergunta orientada</label>
+              <select id="coordQuestionSelect" class="form-select fmp-select-config" title="Escolha uma pergunta ou o modo manual">
+                <option value="">— Nenhuma (configurar manualmente) —</option>
+              </select>
+            </div>
+
+            <div id="fmpGuidedFilters" class="d-none">
+              <label class="form-label" for="coordPeriodSelect">Período <span class="text-muted small">(opcional)</span></label>
+              <select id="coordPeriodSelect" class="form-select mb-3 fmp-select-config" title="Filtra linhas antes da deduplicação">
+                <option value="">Todos os períodos</option>
+              </select>
+              <label class="form-label" for="coordCursoSelect">Curso <span class="text-muted small">(opcional)</span></label>
+              <select id="coordCursoSelect" class="form-select mb-3 fmp-select-config" title="Restringe a um curso antes da deduplicação">
+                <option value="">Todos os cursos</option>
+              </select>
+            </div>
+
+            <div id="fmpManualConfig">
+              <label class="form-label fw-bold" for="colunaSelect">Coluna principal <span class="text-danger">*</span> <span class="text-muted small fw-normal">(mesma nos 2 arquivos)</span></label>
+              <select id="colunaSelect" class="form-select mb-2 fmp-select-config">
+                <option value="">Selecione um arquivo primeiro</option>
+              </select>
+
+              <label class="form-label" for="colunaGroupBy">Agrupar por <span class="text-muted small">(opcional)</span></label>
+              <select id="colunaGroupBy" class="form-select mb-2 fmp-select-config">
+                <option value="">Nenhum agrupamento</option>
+              </select>
+
+              <label class="form-label fw-bold" for="tipoSelect">Tipo de visualização</label>
+              <select id="tipoSelect" class="form-select mb-3 fmp-select-config">
+                <option value="bar">📊 Barras</option>
+                <option value="pie">🥧 Pizza</option>
+                <option value="line">📈 Linha</option>
+                <option value="texto">📄 Relatório por extenso</option>
+              </select>
+            </div>
+
+            <div id="fmpCoordPanel" class="d-none border rounded-3 p-3 bg-info bg-opacity-10 border-info border-opacity-25 mb-3">
+              <p class="small text-muted mb-3 mb-md-2" id="coordIntroText">
+                Perguntas de coordenadores: o sistema deduplica por <strong>e-mail</strong> (último registro por data ou maior <code>id</code>).
+              </p>
+              <button type="button" class="btn btn-info w-100 text-white" id="btnCoordGerar" disabled>
+                <span id="btnCoordGerarLabel">Gerar resposta</span>
+                <span id="btnCoordSpinner" class="spinner-border spinner-border-sm d-none ms-1" role="status"></span>
+              </button>
+              <div id="coordHint" class="small text-secondary mt-2 d-none"></div>
+            </div>
+
+            <p class="small text-muted mb-2 d-none d-md-block">Comparação: escolha base e arquivo para comparar; a mesma coluna deve existir nos dois.</p>
+            <button type="button" class="btn btn-outline-primary w-100" id="btnGerarComparar">Gerar e Comparar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações -->
+      <div class="col-12 col-lg-4">
+        <div class="card h-100 shadow-sm border-0 bg-light">
+          <div class="card-body">
+            <h2 class="h6 fw-bold d-flex align-items-center gap-2 mb-3">
+              <span aria-hidden="true">🔗</span> Informações
+            </h2>
+            <p class="small text-muted mb-3">Configure os dados e clique em &quot;Gerar Análise&quot; (modo manual) ou &quot;Gerar resposta&quot; (pergunta orientada) para visualizar os resultados.</p>
+            <div class="rounded-3 bg-white border p-3 small">
+              <ul class="list-unstyled mb-0 fmp-checklist">
+                <li class="d-flex align-items-start gap-2 mb-2">
+                  <span class="fmp-ci fmp-ci-off" id="ci-arquivo" aria-hidden="true">✓</span>
+                  <span>Arquivo selecionado</span>
+                </li>
+                <li class="d-flex align-items-start gap-2 mb-2">
+                  <span class="fmp-ci fmp-ci-off" id="ci-coluna" aria-hidden="true">✓</span>
+                  <span>Coluna configurada</span>
+                </li>
+                <li class="d-flex align-items-start gap-2">
+                  <span class="fmp-ci fmp-ci-off" id="ci-pronto" aria-hidden="true">✓</span>
+                  <span>Pronto para gerar</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros avançados (filtersArea — mesmo id para scripts.js) -->
+    <div class="row mt-4">
+      <div class="col-12 col-xl-8">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body py-3">
+            <button class="btn btn-link text-decoration-none text-primary fw-semibold p-0 d-flex align-items-center gap-2 w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFiltrosAv" aria-expanded="false" aria-controls="collapseFiltrosAv">
+              <span aria-hidden="true">⏷</span> Filtros avançados
+              <span class="ms-auto small text-muted">(valores por coluna)</span>
+            </button>
+            <div class="collapse mt-3" id="collapseFiltrosAv">
+              <div id="filtersArea" class="small text-muted">
+                <!-- filtros dinâmicos (scripts.js) -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-4 d-none d-xl-block"></div>
+    </div>
+
+    <!-- Barra de ação -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card shadow-sm border fmp-action-bar">
+          <div class="card-body py-4 d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+            <div>
+              <p class="fw-semibold mb-1 mb-lg-0">Pronto para visualizar seus dados?</p>
+              <p class="small text-muted mb-0" id="fmpActionHint">Complete os passos acima e escolha coluna e tipo de gráfico (modo manual).</p>
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-2 flex-shrink-0">
+              <button class="btn btn-primary btn-lg px-4" type="button" id="btnGerar">Gerar Análise</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resultado -->
+    <div class="row mt-4" id="secaoResultado" tabindex="-1">
+      <main class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-bold">Resultado</span>
+            <div>
+              <button id="btnSalvarTodos" class="btn btn-success btn-sm d-none">💾 Salvar todos</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="graficoContainer" class="d-flex flex-column gap-4">
+              <p class="text-center text-secondary mb-0">Nenhum gráfico gerado ainda.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+  </div>
+
+  <!-- UPLOAD MODAL -->
+  <div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Enviar CSV</h5>
+          <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="file" id="csvFile" accept=".csv" class="form-control">
+          <div class="form-text small mt-2">Envie apenas arquivos .csv (mesmo nome pode sobrescrever).</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
+          <button class="btn btn-success" id="uploadBtnModal" type="button">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="manageFilesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Gerenciamento de Arquivos</h5>
+          <button class="btn-close" data-bs-dismiss="modal" type="button" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="searchFiles" class="form-control mb-3" placeholder="Pesquisar arquivo...">
+          <ul class="list-group" id="filesList"></ul>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer-ilab mt-auto">
+    <div class="container py-3 text-center">
+      <a href="{{ url_for('quem_somos') }}" class="footer-link">Quem somos</a>
+      <p class="footer-copy mt-2 mb-0">
+        © {{ current_year }} iLab — Sistema de Processamento e Análises.
+      </p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js/dist/css/shepherd.css">
+  <script src="https://cdn.jsdelivr.net/npm/shepherd.js/dist/js/shepherd.min.js"></script>
+  <script src="{{ url_for('static', filename='js/tutorial.js') }}"></script>
+
+  <script src="{{ url_for('static', filename='js/index-1-layout.js') }}"></script>
+
+  <div id="chatbot-button" onclick="toggleChat()">💬 Dúvidas?</div>
+
+  <div id="chatbot-window" style="display: none;">
+    <div id="chat-header">
+      Assistente da Faculdade
+      <span onclick="toggleChat()" style="cursor:pointer; float:right;">✖</span>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-area">
+      <input type="text" id="user-input" placeholder="Pergunte sobre os dados...">
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleChat() {
+      const chat = document.getElementById("chatbot-window");
+      chat.style.display = chat.style.display === "none" ? "flex" : "none";
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const messages = document.getElementById("chat-messages");
+      const text = input.value;
+
+      if (!text) return;
+
+      messages.innerHTML += `<div style="margin: 5px 0; padding: 8px; background: #e9ecef; border-radius: 5px;"><b>Você:</b> ${text}</div>`;
+      input.value = "";
+      messages.innerHTML += `<div id="loading" style="margin: 5px 0;"><i>Consultando os dados do banco... 🧠</i></div>`;
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensagem: text })
+        });
+
+        const data = await response.json();
+        document.getElementById("loading").remove();
+        messages.innerHTML += `<div style="margin: 5px 0; padding: 8px; background: #cce5ff; border-radius: 5px;"><b>Assistente:</b> ${data.resposta}</div>`;
+        messages.scrollTop = messages.scrollHeight;
+      } catch (error) {
+        document.getElementById("loading").remove();
+        messages.innerHTML += `<div style="color: red;">Erro ao conectar com o servidor.</div>`;
+      }
+    }
+  </script>
+
+</body>
+
+</html>

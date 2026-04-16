@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FMP — Matrícula e Rematrícula</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    :root{
+      --branco: #FFFFFF;
+      --vermelho: #C62828;
+      --azul: #0B3353;
+      --radius-xl: 14px;
+    }
+    body{
+      background: linear-gradient(180deg, var(--branco) 0%, #fbfbfb 100%);
+      color: var(--azul);
+      padding: 40px 20px;
+    }
+    .form-container{
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--branco);
+      padding: 30px;
+      border-radius: var(--radius-xl);
+      box-shadow: 0 10px 30px rgba(11, 51, 83, 0.08);
+      border: 1px solid rgba(11, 51, 83, 0.06);
+    }
+    h2{
+      color: var(--azul);
+      font-weight: 700;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+    .section-title {
+      background: var(--azul);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-top: 30px;
+      margin-bottom: 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .form-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .btn-submit {
+      background: var(--azul);
+      color: white;
+      font-weight: 700;
+      padding: 12px 30px;
+      border-radius: 10px;
+      border: none;
+      width: 100%;
+      margin-top: 30px;
+      transition: 0.3s;
+    }
+    .btn-submit:hover {
+      background: var(--vermelho);
+      transform: translateY(-2px);
+    }
+    .conditional-field {
+      display: none;
+      margin-top: 10px;
+      padding-left: 20px;
+      border-left: 3px solid var(--vermelho);
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <div class="text-center mb-4">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo FMP" style="width: 200px;">
+    </div>
+    <h2>Formulário de Matrícula e Rematrícula</h2>
+
+    <form method="POST" action="{{ url_for('matricula') }}">
+      <div class="mb-3">
+        <label class="form-label">E-mail Institucional</label>
+        <input type="email" name="email" class="form-control" placeholder="Digite seu email" required>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Em qual ano/semestre entrou na faculdade?</label>
+          <select name="periodo_ingresso" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>2022/1º</option>
+            <option>2022/2º</option>
+            <option>2023/1º</option>
+            <option>2023/2º</option>
+            <option>2024/1º</option>
+            <option>2024/2º</option>
+            <option>2024/3º</option>
+            <option>2025/1º</option>
+            <option>2025/2º</option>
+            <option>2026/1º</option>
+            <option>2026/2º</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Qual curso você faz na FMP?</label>
+          <select name="curso" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Administração</option>
+            <option>Análise e Desenvolvimento de Sistemas</option>
+            <option>Pedagogia</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Qual fase você está cursando?</label>
+          <select name="fase" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            {% for i in range(1, 9) %}
+            <option>{{ i }}º fase</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Qual sua idade?</label>
+          <select name="faixa_etaria" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>18 - 22 anos</option>
+            <option>23 - 27 anos</option>
+            <option>28 - 32 anos</option>
+            <option>33 - 37 anos</option>
+            <option>38 - 42 anos</option>
+            <option>+ 42 anos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">Perfil Sociodemográfico</div>
+
+      <div class="mb-3">
+        <label class="form-label">Tem diagnóstico ou investigação de alguma deficiência?</label>
+        <div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="tem_deficiencia" id="def_nao" value="Não" required onchange="toggleField('def_extra', false)">
+            <label class="form-check-label" for="def_nao">Não</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="tem_deficiencia" id="def_sim" value="Sim" required onchange="toggleField('def_extra', true)">
+            <label class="form-check-label" for="def_sim">Sim</label>
+          </div>
+        </div>
+        <div id="def_extra" class="conditional-field">
+          <label class="form-label">Qual?</label>
+          <input type="text" name="qual_deficiencia" class="form-control" placeholder="Especifique a deficiência">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Qual sua cor/raça?</label>
+          <select name="cor_raca" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Indígena</option>
+            <option>Preto</option>
+            <option>Pardo</option>
+            <option>Branco</option>
+            <option>Amarelo</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Selecione seu gênero:</label>
+          <select name="genero" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Masculino</option>
+            <option>Feminino</option>
+            <option>Transgênero</option>
+            <option>Não Binário</option>
+            <option>Prefiro não dizer</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Onde você mora?</label>
+          <select name="cidade" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Palhoça</option>
+            <option>São José</option>
+            <option>Santo Amaro</option>
+            <option>Biguaçu</option>
+            <option>Paulo Lopes</option>
+            <option>Florianópolis</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Tipo de Moradia:</label>
+          <select name="tipo_moradia" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Aluguel</option>
+            <option>Casa própria</option>
+            <option>De favor</option>
+            <option>Hotel</option>
+            <option>Com os pais</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Qual sua escolaridade?</label>
+        <select name="escolaridade" class="form-select" required>
+          <option value="" selected disabled hidden>Selecione...</option>
+          <option>Ensino médio completo</option>
+          <option>Ensino médio + técnico completo</option>
+          <option>Ensino superior incompleto</option>
+          <option>Ensino superior completo</option>
+          <option>Pós graduação</option>
+          <option>Mestrado</option>
+          <option>Doutorado</option>
+        </select>
+      </div>
+
+      <div class="section-title">Trabalho e Renda</div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Você trabalha?</label>
+          <select name="trabalha" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Trabalha na área em que estuda?</label>
+          <select name="trabalha_na_area" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Qual sua principal atividade?</label>
+        <select name="atividade_principal" class="form-select" required>
+          <option value="" selected disabled hidden>Selecione...</option>
+          <option>Apenas estudo</option>
+          <option>Estágio</option>
+          <option>CLT</option>
+          <option>Autônomo/trabalho informal/freelancer</option>
+          <option>Empreendedor/MEI</option>
+          <option>Empresário</option>
+          <option>Desempregado</option>
+          <option>Outro</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Jornada diária de trabalho (média):</label>
+          <select name="jornada_trabalho" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>0h (não trabalho)</option>
+            <option>4h</option>
+            <option>6h</option>
+            <option>8h</option>
+            <option>10h</option>
+            <option>12h</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Qual sua faixa de renda?</label>
+          <select name="faixa_renda" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>500,00 - 1000,00</option>
+            <option>1100,00 - 1700,00</option>
+            <option>1800,00 - 2300,00</option>
+            <option>2400,00 - 3000,00</option>
+            <option>3100,00 - 3700,00</option>
+            <option>3800,00 - 4500,00</option>
+            <option>+ 4600,00</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Tem filhos/dependentes?</label>
+        <div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="tem_filhos" id="filhos_nao" value="Não" required onchange="toggleField('filhos_extra', false)">
+            <label class="form-check-label" for="filhos_nao">Não</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="tem_filhos" id="filhos_sim" value="Sim" required onchange="toggleField('filhos_extra', true)">
+            <label class="form-check-label" for="filhos_sim">Sim</label>
+          </div>
+        </div>
+        <div id="filhos_extra" class="conditional-field">
+          <label class="form-label">Quantos?</label>
+          <input type="text" name="quantos_filhos" id="qtd_filhos" class="form-control" placeholder="Ex: 01" maxlength="2">
+        </div>
+      </div>
+
+      <div class="section-title">Saúde e Tecnologia</div>
+
+      <div class="mb-3">
+        <label class="form-label">Pratica atividade física?</label>
+        <div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="pratica_atividade_fisica" id="ativ_nao" value="Não" required onchange="toggleField('ativ_extra', false)">
+            <label class="form-check-label" for="ativ_nao">Não</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="pratica_atividade_fisica" id="ativ_sim" value="Sim" required onchange="toggleField('ativ_extra', true)">
+            <label class="form-check-label" for="ativ_sim">Sim</label>
+          </div>
+        </div>
+        <div id="ativ_extra" class="conditional-field">
+          <label class="form-label">Qual? (Lutas, vôlei, futebol, natação, outros)</label>
+          <input type="text" name="qual_atividade_fisica" class="form-control" placeholder="Especifique">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Possui computador/notebook pessoal?</label>
+          <select name="possui_computador" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Tem acesso à internet em casa?</label>
+          <select name="acesso_internet" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Dificuldade com tecnologias?</label>
+          <select name="dificuldade_tecnologia" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">Vida Acadêmica e Deslocamento</div>
+
+      <div class="mb-3">
+        <label class="form-label">Como geralmente se transporta até a faculdade?</label>
+        <select name="meio_transporte" class="form-select" required>
+          <option value="" selected disabled hidden>Selecione...</option>
+          <option>Carro</option>
+          <option>Moto</option>
+          <option>Ônibus</option>
+          <option>APPs de transporte</option>
+          <option>Bicicleta</option>
+          <option>Nenhum</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Enfrenta dificuldade ou limitações para frequentar o curso?</label>
+        <select name="dificuldade_frequencia" class="form-select" required>
+          <option value="" selected disabled hidden>Selecione...</option>
+          <option>Não</option>
+          <option>Tempo</option>
+          <option>Período</option>
+          <option>Transporte/Deslocamento</option>
+          <option>Limitações tecnológicas</option>
+          <option>Limitações de saúde</option>
+          <option>Outros</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Como você se alimenta na instituição?</label>
+        <select name="forma_alimentacao" class="form-select" required>
+          <option value="" selected disabled hidden>Selecione...</option>
+          <option>Trago comida de casa.</option>
+          <option>Compro na cantina da instituição.</option>
+          <option>Compro comida fora da instituição.</option>
+          <option>Não costumo me alimentar na instituição.</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Meio de comunicação que mais usa:</label>
+          <select name="meio_comunicacao" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Redes sociais</option>
+            <option>Televisão</option>
+            <option>Rádio</option>
+            <option>Jornais</option>
+            <option>Sites de notícia</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Como conheceu a FMP?</label>
+          <select name="meio_divulgacao" class="form-select" required>
+            <option value="" selected disabled hidden>Selecione...</option>
+            <option>Instagram</option>
+            <option>Facebook</option>
+            <option>Amigos/Familiares</option>
+            <option>Site oficial</option>
+            <option>Visita à instituição</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Você segue a FMP no Instagram ou Facebook?</label>
+        <select name="segue_redes_sociais" class="form-select" required>
+          <option value="" selected disabled hidden>Selecione...</option>
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-submit shadow-sm">Finalizar Matrícula / Rematrícula</button>
+      <a href="http://127.0.0.1:5050/analises" class="btn btn-outline-secondary w-100 mt-2">Voltar ao Painel</a>
+    </form>
+  </div>
+
+  <script>
+    function toggleField(id, show) {
+      document.getElementById(id).style.display = show ? 'block' : 'none';
+    }
+
+    // Máscara para número de filhos (01, 02...)
+    document.getElementById('qtd_filhos').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 0) {
+            value = value.padStart(2, '0');
+        }
+        e.target.value = value.slice(-2);
+    });
+  </script>
+</body>
+</html>
