@@ -6,7 +6,7 @@ Monorepo com **frontend** (React + Vite, estático) e **backend** (Flask/Python)
 
 | Pasta / arquivo | Conteúdo |
 |-----------------|----------|
-| `frontend/` | `index.html` = login estático (espelho de `backend/templates/login.html`); `app.html` = shell do React. Build em `frontend/dist/`. |
+| `frontend/` | `index.html` = login estático; `index-1.html` = módulo de análises (espelho de `backend/templates/index-1.html`), CSS/JS em `public/`. Build em `frontend/dist/`. |
 | `backend/` | Flask (`app.py`, `faculdade_app.py`), templates HTML, `static/`, modelos, testes, `test_data/`. |
 | `run_stack.py` | Na raiz: delega para `backend/run_stack.py` (sobe API da faculdade + SPA Flask conforme script). |
 | `requirements.txt` | Na raiz: inclui `backend/requirements.txt`. |
@@ -53,7 +53,7 @@ Saída em `frontend/dist/`. Para desenvolvimento local com `npm run preview`, us
 ## GitHub Pages
 
 - **O que é publicado:** apenas o conteúdo estático gerado em `frontend/dist` (HTML, JS, CSS, assets). O workflow faz o build com `VITE_BASE=/testessistemaacademico/`.
-- **Primeira tela no site estático:** `index.html` (login completo, como no Flask). Após **Entrar**, o fluxo vai para **`app.html`** (React); a marca de sessão fica em `sessionStorage` até **Sair** ou fechar o navegador. Em dev: `http://localhost:5173/` = login; `http://localhost:5173/app.html` = painel (após login).
+- **Fluxo no site estático:** `index.html` (login). Após **Entrar**, **`index-1.html`** (mesmo layout que `backend/templates/index-1.html`). Sessão em `sessionStorage` (`fmp_gh_pages_auth`); **Sair** volta ao login. Em dev: `http://localhost:5173/index-1.html` após login (o proxy Vite encaminha `/api` ao Flask se estiver em `5050`).
 - **O que não roda no Pages:** Python/Flask, SQLite, uploads e qualquer rota de API. No site estático, chamadas a `/api/...` não têm servidor Flask atrás; a interface pode carregar, mas **dados em tempo real e integrações com o backend exigem o backend em execução** (local ou hospedado) ou uma URL de API configurável no futuro.
 - **Configuração no GitHub:** em **Settings → Pages → Build and deployment**, escolha **GitHub Actions** como origem. O workflow `Deploy frontend to GitHub Pages` dispara em push para `main`.
 - **URL típica do site de projeto:** `https://letambani.github.io/testessistemaacademico/` (caminho base `/testessistemaacademico/` já considerado no build).
