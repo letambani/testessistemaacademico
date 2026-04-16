@@ -53,6 +53,7 @@ Saída em `frontend/dist/`. Para desenvolvimento local com `npm run preview`, us
 ## GitHub Pages
 
 - **O que é publicado:** apenas o conteúdo estático gerado em `frontend/dist` (HTML, JS, CSS, assets). O workflow faz o build com `VITE_BASE=/testessistemaacademico/`.
+- **Primeira tela no site estático:** o frontend React abre na **página de login** (demonstrativa no navegador; não valida contra o Flask). Após **Entrar**, a sessão fica em `sessionStorage` até **Sair** ou fechar o navegador.
 - **O que não roda no Pages:** Python/Flask, SQLite, uploads e qualquer rota de API. No site estático, chamadas a `/api/...` não têm servidor Flask atrás; a interface pode carregar, mas **dados em tempo real e integrações com o backend exigem o backend em execução** (local ou hospedado) ou uma URL de API configurável no futuro.
 - **Configuração no GitHub:** em **Settings → Pages → Build and deployment**, escolha **GitHub Actions** como origem. O workflow `Deploy frontend to GitHub Pages` dispara em push para `main`.
 - **URL típica do site de projeto:** `https://letambani.github.io/testessistemaacademico/` (caminho base `/testessistemaacademico/` já considerado no build).

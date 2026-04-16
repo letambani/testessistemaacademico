@@ -18,7 +18,12 @@ const NAV = [
   { href: "#configuracoes", label: "Configurações" },
 ] as const;
 
-export function FMPHeader() {
+type FMPHeaderProps = {
+  /** GitHub Pages: volta à tela de login (sessão apenas no navegador). */
+  onLogout?: () => void;
+};
+
+export function FMPHeader({ onLogout }: FMPHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoOk, setLogoOk] = useState(true);
 
@@ -32,13 +37,13 @@ export function FMPHeader() {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <a
-            href="/"
+            href={import.meta.env.BASE_URL}
             className="flex shrink-0 items-center gap-2 rounded-lg outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-sky-300"
             aria-label="Faculdade Maria da Penha — início"
           >
             {logoOk ? (
               <img
-                src="/logo-sem-fundo.png"
+                src={`${import.meta.env.BASE_URL}logo-sem-fundo.png`}
                 alt=""
                 className="h-9 w-auto max-w-[140px] object-contain"
                 width={140}
@@ -108,7 +113,10 @@ export function FMPHeader() {
                 Preferências
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer gap-2 text-red-600 focus:text-red-600">
+              <DropdownMenuItem
+                className="cursor-pointer gap-2 text-red-600 focus:text-red-600"
+                onClick={() => onLogout?.()}
+              >
                 <LogOut className="h-4 w-4" />
                 Sair
               </DropdownMenuItem>
