@@ -1,13 +1,11 @@
 import { useId, useState } from "react";
-import { Button } from "@/app/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Eye, EyeOff } from "lucide-react";
+import "@/styles/login-template.css";
+
+const base = import.meta.env.BASE_URL;
 
 type Props = {
   onSuccess: () => void;
 };
-
-const base = import.meta.env.BASE_URL;
 
 export function LoginPage({ onSuccess }: Props) {
   const emailId = useId();
@@ -16,6 +14,7 @@ export function LoginPage({ onSuccess }: Props) {
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const togglePwdLabel = showPwd ? "Ocultar" : "Mostrar";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,113 +29,129 @@ export function LoginPage({ onSuccess }: Props) {
   }
 
   return (
-    <div
-      className={cn(
-        "flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-8",
-        "bg-gradient-to-b from-white to-slate-50 text-[#0B3353]",
-      )}
-    >
-      <div className="flex w-full max-w-[1100px] flex-col items-center gap-8">
-        <header className="flex flex-col items-center gap-2 text-center">
+    <div className="login-template-root">
+      <main className="center-wrap" role="main">
+        <section className="logo">
           <img
             src={`${base}logo.png`}
             alt="Logo FMP — Faculdade Municipal de Palhoça"
-            className="h-auto w-[min(260px,85vw)] object-contain"
-            width={260}
-            height={120}
           />
-          <div>
-            <p className="text-lg font-bold tracking-tight">FMP</p>
-            <p className="text-sm text-[#0B3353]/80">
+          <div className="brand-sub">
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--azul)" }}>
+              FMP
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "rgba(11,51,83,0.8)",
+                marginTop: 2,
+              }}
+            >
               Faculdade Municipal de Palhoça
-            </p>
+            </div>
           </div>
-        </header>
+        </section>
 
-        <section
-          className="w-full max-w-[360px] rounded-[14px] border border-[#0B3353]/10 bg-white p-6 shadow-[0_10px_30px_rgba(11,51,83,0.08)]"
-          aria-labelledby="login-heading"
-        >
-          <h1 id="login-heading" className="mb-3 text-[22px] font-semibold">
-            Login
-          </h1>
+        <section className="login-card">
+          <h2>Login</h2>
 
-          <p className="mb-4 text-xs leading-relaxed text-slate-600">
-            No site estático (GitHub Pages) o acesso é demonstrativo: após
-            entrar, a interface carrega sem validação no servidor. O login real
-            com banco de dados ocorre ao rodar o backend Flask localmente.
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label
-                htmlFor={emailId}
-                className="mb-1.5 block text-[13px] font-semibold"
-              >
-                E-mail
-              </label>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor={emailId}>E-mail</label>
               <input
                 id={emailId}
                 name="email"
                 type="email"
-                autoComplete="email"
-                placeholder="seu@exemplo.com"
                 value={email}
                 onChange={(ev) => setEmail(ev.target.value)}
-                className="w-full rounded-[10px] border-[1.5px] border-[#0B3353]/15 bg-white px-3.5 py-3 text-sm outline-none transition focus:border-[#0B3353] focus:shadow-[0_6px_20px_rgba(11,51,83,0.06)]"
+                placeholder="seu@exemplo.com"
+                autoComplete="email"
+                required
               />
             </div>
 
-            <div>
-              <label
-                htmlFor={pwdId}
-                className="mb-1.5 block text-[13px] font-semibold"
-              >
-                Senha
-              </label>
-              <div className="relative">
+            <div className="form-group">
+              <label htmlFor={pwdId}>Senha</label>
+              <div style={{ position: "relative" }}>
                 <input
                   id={pwdId}
-                  name="password"
+                  className="senha-field"
+                  name="senha"
                   type={showPwd ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="Digite sua senha"
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
-                  className="w-full rounded-[10px] border-[1.5px] border-[#0B3353]/15 bg-white px-3.5 py-3 pr-11 text-sm outline-none transition focus:border-[#0B3353] focus:shadow-[0_6px_20px_rgba(11,51,83,0.06)]"
+                  placeholder="Digite sua senha"
+                  autoComplete="current-password"
+                  required
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[#0B3353] hover:bg-slate-100"
+                  id="togglePwd"
                   onClick={() => setShowPwd((v) => !v)}
-                  aria-label={showPwd ? "Ocultar senha" : "Mostrar senha"}
+                  style={{
+                    position: "absolute",
+                    right: 8,
+                    top: 6,
+                    height: 32,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: 0,
+                    background: "transparent",
+                    cursor: "pointer",
+                    color: "var(--azul)",
+                    fontWeight: 700,
+                  }}
                 >
-                  {showPwd ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {togglePwdLabel}
                 </button>
               </div>
             </div>
 
+            <div className="row-between" style={{ marginBottom: 12 }}>
+              <div />
+              <a
+                href="#"
+                className="forgot"
+                onClick={(ev) => ev.preventDefault()}
+                title="Disponível com o servidor Flask (recuperar senha)"
+              >
+                Esqueci a senha
+              </a>
+            </div>
+
             {error ? (
-              <p className="text-sm text-red-600" role="alert">
-                {error}
-              </p>
+              <ul
+                style={{
+                  marginTop: 10,
+                  listStyle: "none",
+                  padding: 0,
+                }}
+              >
+                <li style={{ color: "#c00", fontSize: 14 }}>{error}</li>
+              </ul>
             ) : null}
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button
-                type="submit"
-                className="bg-[#0B3353] hover:bg-[#09283f]"
-              >
+            <div>
+              <button className="btn btn-primary" type="submit">
                 Entrar
-              </Button>
+              </button>
+              <a
+                href="#"
+                className="btn btn-outline"
+                role="button"
+                onClick={(ev) => ev.preventDefault()}
+                title="Disponível com o servidor Flask (cadastro)"
+              >
+                Cadastrar
+              </a>
+            </div>
+
+            <div className="small-note" style={{ marginTop: 12 }}>
+              Não possui conta? Clique em <strong>Cadastrar</strong>.
             </div>
           </form>
         </section>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,0 +1,197 @@
+/* Espelho dos estilos de backend/templates/login.html (escopado para não vazar no resto do app). */
+.login-template-root {
+  --branco: #ffffff;
+  --vermelho: #c62828;
+  --azul: #0b3353;
+  --radius-xl: 14px;
+  --card-width: 360px;
+}
+
+.login-template-root * {
+  box-sizing: border-box;
+}
+
+.login-template-root {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: linear-gradient(180deg, var(--branco) 0%, #fbfbfb 100%);
+  color: var(--azul);
+}
+
+.login-template-root .center-wrap {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.login-template-root .logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.login-template-root .logo img {
+  width: 260px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.login-template-root .brand-sub {
+  margin-top: 6px;
+  color: var(--azul);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.login-template-root .login-card {
+  width: var(--card-width);
+  background: var(--branco);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 10px 30px rgba(11, 51, 83, 0.08);
+  padding: 22px;
+  border: 1px solid rgba(11, 51, 83, 0.06);
+}
+
+.login-template-root .login-card h2 {
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  color: var(--azul);
+}
+
+.login-template-root .form-group {
+  margin-bottom: 14px;
+}
+
+.login-template-root label {
+  display: block;
+  font-size: 13px;
+  color: var(--azul);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.login-template-root input[type="email"],
+.login-template-root input[type="password"] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(11, 51, 83, 0.15);
+  outline: none;
+  font-size: 14px;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
+  background: #fff;
+}
+
+.login-template-root input:focus {
+  border-color: var(--azul);
+  box-shadow: 0 6px 20px rgba(11, 51, 83, 0.06);
+}
+
+.login-template-root input[type="password"],
+.login-template-root input[type="text"].senha-field {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(11, 51, 83, 0.15);
+  outline: none;
+  font-size: 14px;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
+  background: #fff;
+}
+
+.login-template-root .row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-template-root .forgot {
+  font-size: 13px;
+  color: var(--azul);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-template-root .forgot:hover {
+  color: var(--vermelho);
+}
+
+.login-template-root .btn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 0;
+  cursor: pointer;
+  text-align: center;
+  font-weight: 700;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s;
+}
+
+.login-template-root .btn:active {
+  transform: translateY(1px);
+}
+
+.login-template-root .btn-primary {
+  background: var(--azul);
+  color: var(--branco);
+  box-shadow: 0 8px 20px rgba(11, 51, 83, 0.08);
+}
+
+.login-template-root .btn-primary:hover {
+  opacity: 0.95;
+}
+
+.login-template-root .btn-outline {
+  margin-top: 8px;
+  background: transparent;
+  color: var(--azul);
+  border: 2px solid rgba(11, 51, 83, 0.12);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-template-root .btn-outline:hover {
+  background: var(--vermelho);
+  color: var(--branco);
+  border-color: var(--vermelho);
+}
+
+.login-template-root .small-note {
+  font-size: 13px;
+  color: rgba(11, 51, 83, 0.7);
+  text-align: center;
+  margin-top: 8px;
+}
+
+@media (min-width: 900px) {
+  .login-template-root .center-wrap {
+    flex-direction: row;
+  }
+
+  .login-template-root .side-illustration {
+    display: block;
+    width: 460px;
+  }
+}
