@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Chatbot } from "@/app/components/Chatbot";
 import { ControlPanel } from "@/app/components/ControlPanel";
 import { FMPFooter } from "@/app/components/FMPFooter";
 import { FMPHeader } from "@/app/components/FMPHeader";
-import { LoginPage } from "@/app/components/LoginPage";
 import { ResultsPanel } from "@/app/components/ResultsPanel";
 import type { AnalysisResult } from "@/types/analysis";
 
@@ -18,10 +17,16 @@ function readSession(): boolean {
 }
 
 export default function App() {
-  const [authed, setAuthed] = useState(readSession);
+  const [sessionOk] = useState(() => readSession());
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sessionOk) {
+      window.location.replace(import.meta.env.BASE_URL);
+    }
+  }, [sessionOk]);
 
   function handleLogout() {
     try {
@@ -29,11 +34,15 @@ export default function App() {
     } catch {
       /* ignore */
     }
-    setAuthed(false);
+    window.location.href = import.meta.env.BASE_URL;
   }
 
-  if (!authed) {
-    return <LoginPage onSuccess={() => setAuthed(true)} />;
+  if (!sessionOk) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
+        <p className="text-sm">Carregando…</p>
+      </div>
+    );
   }
 
   return (
