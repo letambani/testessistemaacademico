@@ -47,8 +47,8 @@ export function ResultsPanel({
       {!loading && !error && !result ? (
         <Card className="border-dashed border-slate-300 bg-slate-50/80 shadow-sm">
           <CardContent className="py-12 text-center text-sm text-slate-600">
-            Configure os dados e clique em &quot;Gerar Análise&quot; para
-            visualizar gráficos e relatórios aqui.
+            Quando você gerar uma análise, os gráficos e textos aparecem aqui,
+            prontos para explorar ou apresentar.
           </CardContent>
         </Card>
       ) : null}

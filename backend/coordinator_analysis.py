@@ -165,7 +165,12 @@ def deduplicate_by_email(df: pd.DataFrame) -> pd.DataFrame:
             d[ord_col] = pd.to_datetime(d[ord_col], errors="coerce")
         except Exception:
             pass
-        d = d.sort_values(ord_col, ascending=True, na_position="first")
+        sort_cols: list[str] = [ord_col]
+        sort_asc: list[bool] = [True]
+        if "id" in d.columns:
+            sort_cols.append("id")
+            sort_asc.append(True)
+        d = d.sort_values(sort_cols, ascending=sort_asc, na_position="first")
     elif "id" in d.columns:
         d = d.sort_values("id", ascending=True, na_position="first")
     else:

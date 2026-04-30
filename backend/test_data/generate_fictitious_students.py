@@ -5,11 +5,49 @@ Saídas: out/alunos_ficticios_50.json, out/historico_4_semestres.json
 """
 from __future__ import annotations
 
+import csv
 import json
 import random
 from pathlib import Path
+from typing import Any
 
 from config_mapping import FORM_OPTIONS, FORM_FIELD_ORDER
+
+# Mesmas chaves que faculdade_app.api_todas_matriculas (CSV compatível com relatórios).
+_CSV_API_COLUMNS: tuple[str, ...] = (
+    "id",
+    "E-mail",
+    "Tipo de Matrícula",
+    "Curso",
+    "Período de Ingresso",
+    "Fase",
+    "Tem Deficiência",
+    "Qual Deficiência",
+    "Faixa Etária",
+    "Cor/Raça",
+    "Gênero",
+    "Cidade",
+    "Tipo de Moradia",
+    "Escolaridade",
+    "Trabalha",
+    "Trabalha na Área",
+    "Atividade Principal",
+    "Jornada de Trabalho",
+    "Tem Filhos",
+    "Quantos Filhos",
+    "Faixa de Renda",
+    "Pratica Atividade Física",
+    "Qual Atividade Física",
+    "Possui Computador",
+    "Acesso Internet",
+    "Dificuldade Tecnologia",
+    "Meio de Transporte",
+    "Dificuldade Frequência",
+    "Forma de Alimentação",
+    "Meio de Comunicação",
+    "Meio de Divulgação",
+    "Segue Redes Sociais",
+)
 
 OUT = Path(__file__).resolve().parent / "out"
 RNG = random.Random(42)
@@ -225,6 +263,70 @@ def build_timeline(students: list[dict]) -> list[dict]:
     return timeline
 
 
+def build_matricula_rows_api_shape() -> list[dict[str, Any]]:
+    """Uma linha por envio (matrícula/rematrícula), igual ao seed da API — com E-mail para relatórios."""
+    students = build_student_list()
+    timeline = build_timeline(students)
+    rows: list[dict[str, Any]] = []
+    rid = 1
+    for ev in timeline:
+        if ev.get("operacao") == "omitido":
+            continue
+        fp = ev["form_payload"]
+        tipo = ev["tipo_matricula_esperado"]
+        rows.append(
+            {
+                "id": rid,
+                "E-mail": fp["email"],
+                "Tipo de Matrícula": tipo,
+                "Curso": fp["curso"],
+                "Período de Ingresso": fp["periodo_ingresso"],
+                "Fase": fp["fase"],
+                "Tem Deficiência": fp["tem_deficiencia"],
+                "Qual Deficiência": fp.get("qual_deficiencia") or "",
+                "Faixa Etária": fp["faixa_etaria"],
+                "Cor/Raça": fp["cor_raca"],
+                "Gênero": fp["genero"],
+                "Cidade": fp["cidade"],
+                "Tipo de Moradia": fp["tipo_moradia"],
+                "Escolaridade": fp["escolaridade"],
+                "Trabalha": fp["trabalha"],
+                "Trabalha na Área": fp["trabalha_na_area"],
+                "Atividade Principal": fp["atividade_principal"],
+                "Jornada de Trabalho": fp["jornada_trabalho"],
+                "Tem Filhos": fp["tem_filhos"],
+                "Quantos Filhos": fp.get("quantos_filhos") or "",
+                "Faixa de Renda": fp["faixa_renda"],
+                "Pratica Atividade Física": fp["pratica_atividade_fisica"],
+                "Qual Atividade Física": fp.get("qual_atividade_fisica") or "",
+                "Possui Computador": fp["possui_computador"],
+                "Acesso Internet": fp["acesso_internet"],
+                "Dificuldade Tecnologia": fp["dificuldade_tecnologia"],
+                "Meio de Transporte": fp["meio_transporte"],
+                "Dificuldade Frequência": fp["dificuldade_frequencia"],
+                "Forma de Alimentação": fp["forma_alimentacao"],
+                "Meio de Comunicação": fp["meio_comunicacao"],
+                "Meio de Divulgação": fp["meio_divulgacao"],
+                "Segue Redes Sociais": fp["segue_redes_sociais"],
+            }
+        )
+        rid += 1
+    return rows
+
+
+def write_demo_matriculas_csv(target: Path) -> int:
+    rows = build_matricula_rows_api_shape()
+    if not rows:
+        return 0
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(_CSV_API_COLUMNS), extrasaction="ignore")
+        w.writeheader()
+        for row in rows:
+            w.writerow({k: row.get(k, "") for k in _CSV_API_COLUMNS})
+    return len(rows)
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     students = build_student_list()
@@ -254,6 +356,11 @@ def main():
     (OUT / "meta_geracao.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Gerado: {OUT / 'alunos_ficticios_50.json'}")
     print(f"Gerado: {OUT / 'historico_4_semestres.json'}")
+
+    backend_root = Path(__file__).resolve().parent.parent
+    demo_csv = backend_root / "uploads" / "alunos_ficticios_demo.csv"
+    n_csv = write_demo_matriculas_csv(demo_csv)
+    print(f"Gerado: {demo_csv} ({n_csv} linhas) — use em Fonte de Dados → Arquivos CSV")
 
 
 if __name__ == "__main__":

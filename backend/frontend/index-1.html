@@ -8,12 +8,27 @@
   <meta name="fmp-backend-origin" content="http://127.0.0.1:5050" />
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/css/shepherd.css">
   <link rel="stylesheet" href="./css/style.css">
 </head>
 
 <body class="index-1-layout">
   <script>
     (function () {
+      function fmpBackendOrigin() {
+        var m = document.querySelector('meta[name="fmp-backend-origin"]');
+        if (!m || !m.content) return "";
+        return String(m.content).trim().replace(/\/$/, "");
+      }
+      function fmpIsLocalHost() {
+        var h = location.hostname;
+        return h === "localhost" || h === "127.0.0.1";
+      }
+      var backend = fmpBackendOrigin();
+      if (backend && fmpIsLocalHost()) {
+        location.replace(backend + "/analises");
+        return;
+      }
       try {
         if (sessionStorage.getItem("fmp_gh_pages_auth") !== "1") {
           location.replace(new URL("index.html", document.baseURI).href);
@@ -32,14 +47,14 @@
       </div>
 
       <div class="d-flex align-items-center flex-wrap gap-2 justify-content-end">
-        <a href="http://127.0.0.1:5001/matricula-rematricula" target="_blank" class="btn btn-primary btn-sm">📝 Matrícula</a>
-        <a id="btnTutorial" class="btn btn-outline-light btn-sm border-light text-white">❓ Como usar</a>
+        <a id="fmpTourNavMatricula" href="http://127.0.0.1:5001/matricula-rematricula" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">Matrícula</a>
+        <a id="btnTutorial" class="btn btn-outline-light btn-sm border-light text-white">Como usar</a>
         <div class="text-white small text-end d-none d-md-block">
           Bem-vindo, <strong id="navUserName">Usuário</strong><br>
           <span class="opacity-75" id="navUserEmail">—</span>
         </div>
 
-        <button class="btn btn-outline-light btn-sm" id="refreshFilesBtn" title="Recarregar lista de arquivos">↻</button>
+        <button class="btn btn-outline-light btn-sm" id="refreshFilesBtn" title="Recarregar lista de arquivos">Atualizar</button>
         <a href="#" id="fmpLogoutBtn" class="btn btn-link btn-sm text-white">Sair</a>
       </div>
     </div>
@@ -81,17 +96,17 @@
               <div>
                 <span class="badge rounded-pill fmp-badge-step mb-2">PASSO 1</span>
                 <h2 class="h6 mb-0 fw-bold text-primary-emphasis d-flex align-items-center gap-2">
-                  <span aria-hidden="true">🗄</span> Fonte de Dados
+                  Fonte de Dados
                 </h2>
               </div>
-              <span class="text-success d-none" id="checkStep1" title="Base selecionada">✓</span>
+              <span class="text-success d-none" id="checkStep1" title="Base selecionada">OK</span>
             </div>
           </div>
           <div class="card-body">
             <label class="form-label small fw-semibold" for="dataOrigin">Origem</label>
             <select id="dataOrigin" class="form-select mb-3">
               <option value="csv" selected>Arquivos CSV</option>
-              <option value="db">Banco de Dados (API)</option>
+              <option value="db">Banco de Dados (API — matrículas e rematrículas)</option>
             </select>
 
             <div id="csvSelectors">
@@ -117,11 +132,11 @@
               <div class="flex-grow-1">
                 <span class="badge rounded-pill fmp-badge-step mb-2">PASSO 2</span>
                 <h2 class="h6 mb-2 fw-bold text-primary-emphasis d-flex align-items-center gap-2">
-                  <span aria-hidden="true">⚙</span> Configuração
+                  Configuração
                 </h2>
                 <span class="badge rounded-pill bg-secondary" id="coordModeBadge" title="Alterna automaticamente conforme o uso">Modo manual</span>
               </div>
-              <span class="text-success d-none" id="checkStep2" title="Configuração válida">✓</span>
+              <span class="text-success d-none" id="checkStep2" title="Configuração válida">OK</span>
             </div>
           </div>
           <div class="card-body">
@@ -133,7 +148,7 @@
               </select>
             </div>
 
-            <div id="fmpGuidedFilters" class="d-none">
+            <div id="fmpGuidedFilters" class="mb-1">
               <label class="form-label" for="coordPeriodSelect">Período <span class="text-muted small">(opcional)</span></label>
               <select id="coordPeriodSelect" class="form-select mb-3 fmp-select-config" title="Filtra linhas antes da deduplicação">
                 <option value="">Todos os períodos</option>
@@ -157,16 +172,16 @@
 
               <label class="form-label fw-bold" for="tipoSelect">Tipo de visualização</label>
               <select id="tipoSelect" class="form-select mb-3 fmp-select-config">
-                <option value="bar">📊 Barras</option>
-                <option value="pie">🥧 Pizza</option>
-                <option value="line">📈 Linha</option>
-                <option value="texto">📄 Relatório por extenso</option>
+                <option value="bar">Barras</option>
+                <option value="pie">Pizza</option>
+                <option value="line">Linha</option>
+                <option value="texto">Relatório por extenso</option>
               </select>
             </div>
 
             <div id="fmpCoordPanel" class="d-none border rounded-3 p-3 bg-info bg-opacity-10 border-info border-opacity-25 mb-3">
               <p class="small text-muted mb-3 mb-md-2" id="coordIntroText">
-                Perguntas de coordenadores: o sistema deduplica por <strong>e-mail</strong> (último registro por data ou maior <code>id</code>).
+                Cada pergunta já vem com o gráfico certo para a reunião. O sistema considera <strong>só a situação mais recente de cada aluno</strong> (por e-mail), para os números refletirem o que vale hoje.
               </p>
               <button type="button" class="btn btn-info w-100 text-white" id="btnCoordGerar" disabled>
                 <span id="btnCoordGerarLabel">Gerar resposta</span>
@@ -175,7 +190,25 @@
               <div id="coordHint" class="small text-secondary mt-2 d-none"></div>
             </div>
 
-            <p class="small text-muted mb-2 d-none d-md-block">Comparação: escolha base e arquivo para comparar; a mesma coluna deve existir nos dois.</p>
+            <div class="accordion accordion-flush border rounded-3 overflow-hidden mb-3" id="fmpIcAccordion">
+              <div class="accordion-item border-0">
+                <h2 class="accordion-header" id="fmpIcHeading">
+                  <button id="fmpTourIcAccordion" class="accordion-button collapsed py-2 px-3 fw-semibold text-primary-emphasis" type="button" data-bs-toggle="collapse" data-bs-target="#fmpIcCollapse" aria-expanded="false" aria-controls="fmpIcCollapse">
+                    Cruzamento Inteligente de Dados
+                  </button>
+                </h2>
+                <div id="fmpIcCollapse" class="accordion-collapse collapse" aria-labelledby="fmpIcHeading" data-bs-parent="#fmpIcAccordion">
+                  <div class="accordion-body py-3 bg-light bg-opacity-50">
+                    <p class="small text-muted mb-2">Respostas prontas em um clique: cruzamentos que ajudam a enxergar padrões (renda, curso, deslocamento e mais). Usa a <strong>situação mais recente de cada aluno</strong> e os filtros de <strong>período</strong> e <strong>curso</strong> que você marcou acima.</p>
+                    <div id="icCrossLoading" class="small text-secondary mb-2 d-none" role="status">Carregando cruzamentos…</div>
+                    <div id="icCrossEmpty" class="alert alert-light border small py-2 mb-2 d-none">Selecione uma base no Passo 1 para habilitar os cruzamentos.</div>
+                    <div id="icCrossCards" class="row row-cols-1 row-cols-md-2 g-2"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="small text-muted mb-2 d-none d-md-block">Comparação: escolha duas listas e use o mesmo tipo de informação nas duas para o sistema alinhar os gráficos.</p>
             <button type="button" class="btn btn-outline-primary w-100" id="btnGerarComparar">Gerar e Comparar</button>
           </div>
         </div>
@@ -186,21 +219,21 @@
         <div class="card h-100 shadow-sm border-0 bg-light">
           <div class="card-body">
             <h2 class="h6 fw-bold d-flex align-items-center gap-2 mb-3">
-              <span aria-hidden="true">🔗</span> Informações
+              Informações
             </h2>
-            <p class="small text-muted mb-3">Configure os dados e clique em &quot;Gerar Análise&quot; (modo manual) ou &quot;Gerar resposta&quot; (pergunta orientada) para visualizar os resultados.</p>
+            <p class="small text-muted mb-3">Preencha os passos ao lado e use <strong>Gerar análise</strong> (se montou na mão) ou <strong>Gerar resposta</strong> (se escolheu uma pergunta pronta) para ver tudo embaixo, no resultado.</p>
             <div class="rounded-3 bg-white border p-3 small">
               <ul class="list-unstyled mb-0 fmp-checklist">
                 <li class="d-flex align-items-start gap-2 mb-2">
-                  <span class="fmp-ci fmp-ci-off" id="ci-arquivo" aria-hidden="true">✓</span>
+                  <span class="fmp-ci fmp-ci-off" id="ci-arquivo" aria-hidden="true">•</span>
                   <span>Arquivo selecionado</span>
                 </li>
                 <li class="d-flex align-items-start gap-2 mb-2">
-                  <span class="fmp-ci fmp-ci-off" id="ci-coluna" aria-hidden="true">✓</span>
+                  <span class="fmp-ci fmp-ci-off" id="ci-coluna" aria-hidden="true">•</span>
                   <span>Coluna configurada</span>
                 </li>
                 <li class="d-flex align-items-start gap-2">
-                  <span class="fmp-ci fmp-ci-off" id="ci-pronto" aria-hidden="true">✓</span>
+                  <span class="fmp-ci fmp-ci-off" id="ci-pronto" aria-hidden="true">•</span>
                   <span>Pronto para gerar</span>
                 </li>
               </ul>
@@ -215,9 +248,9 @@
       <div class="col-12 col-xl-8">
         <div class="card border-0 shadow-sm">
           <div class="card-body py-3">
-            <button class="btn btn-link text-decoration-none text-primary fw-semibold p-0 d-flex align-items-center gap-2 w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFiltrosAv" aria-expanded="false" aria-controls="collapseFiltrosAv">
-              <span aria-hidden="true">⏷</span> Filtros avançados
-              <span class="ms-auto small text-muted">(valores por coluna)</span>
+            <button id="fmpTourFiltros" class="btn btn-link text-decoration-none text-primary fw-semibold p-0 d-flex align-items-center gap-2 w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFiltrosAv" aria-expanded="false" aria-controls="collapseFiltrosAv">
+              Filtros avançados
+              <span class="ms-auto small text-muted">(marque o que quer incluir)</span>
             </button>
             <div class="collapse mt-3" id="collapseFiltrosAv">
               <div id="filtersArea" class="small text-muted">
@@ -233,11 +266,11 @@
     <!-- Barra de ação -->
     <div class="row mt-4">
       <div class="col-12">
-        <div class="card shadow-sm border fmp-action-bar">
+        <div id="fmpTourActionBar" class="card shadow-sm border fmp-action-bar">
           <div class="card-body py-4 d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
             <div>
               <p class="fw-semibold mb-1 mb-lg-0">Pronto para visualizar seus dados?</p>
-              <p class="small text-muted mb-0" id="fmpActionHint">Complete os passos acima e escolha coluna e tipo de gráfico (modo manual).</p>
+              <p class="small text-muted mb-0" id="fmpActionHint">Siga os passos acima: escolha os dados e depois como quer ver o resultado.</p>
             </div>
             <div class="d-flex flex-column flex-sm-row gap-2 flex-shrink-0">
               <button class="btn btn-primary btn-lg px-4" type="button" id="btnGerar">Gerar Análise</button>
@@ -254,7 +287,7 @@
           <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span class="fw-bold">Resultado</span>
             <div>
-              <button id="btnSalvarTodos" class="btn btn-success btn-sm d-none">💾 Salvar todos</button>
+              <button id="btnSalvarTodos" class="btn btn-success btn-sm d-none">Salvar todos</button>
             </div>
           </div>
           <div class="card-body">
@@ -318,18 +351,17 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script src="./js/scripts.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js/dist/css/shepherd.css">
-  <script src="https://cdn.jsdelivr.net/npm/shepherd.js/dist/js/shepherd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/shepherd.js@11.2.0/dist/js/shepherd.min.js"></script>
   <script src="./js/tutorial.js"></script>
 
   <script src="./js/index-1-layout.js"></script>
 
-  <div id="chatbot-button" onclick="toggleChat()">💬 Dúvidas?</div>
+  <div id="chatbot-button" onclick="toggleChat()">Dúvidas?</div>
 
   <div id="chatbot-window" style="display: none;">
     <div id="chat-header">
       Assistente da Faculdade
-      <span onclick="toggleChat()" style="cursor:pointer; float:right;">✖</span>
+      <span onclick="toggleChat()" style="cursor:pointer; float:right;" title="Fechar">Fechar</span>
     </div>
     <div id="chat-messages"></div>
     <div id="chat-input-area">
@@ -353,15 +385,24 @@
 
       messages.innerHTML += `<div style="margin: 5px 0; padding: 8px; background: #e9ecef; border-radius: 5px;"><b>Você:</b> ${text}</div>`;
       input.value = "";
-      messages.innerHTML += `<div id="loading" style="margin: 5px 0;"><i>Consultando os dados do banco... 🧠</i></div>`;
+      messages.innerHTML += `<div id="loading" style="margin: 5px 0;"><i>Consultando os dados do banco...</i></div>`;
       messages.scrollTop = messages.scrollHeight;
 
       try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mensagem: text })
-        });
+        const chatUrl = typeof fmpApi === "function" ? fmpApi("/api/chat") : "/api/chat";
+        const response =
+          typeof fmpFetch === "function"
+            ? await fmpFetch(chatUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mensagem: text }),
+              })
+            : await fetch(chatUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mensagem: text }),
+                credentials: "include",
+              });
 
         const data = await response.json();
         document.getElementById("loading").remove();

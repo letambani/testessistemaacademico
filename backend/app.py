@@ -42,6 +42,7 @@ from coordinator_analysis import (
     non_remat_csv_bytes,
     run_coordinator_analysis,
 )
+from intelligent_cross_analysis import INTELLIGENT_CROSSINGS, run_intelligent_cross_analysis
 from models.enrollment import Enrollment
 from models.log import Log
 from models.recuperacao_senha import RecuperacaoSenha
@@ -53,6 +54,32 @@ from models.user import User, bcrypt, db
 # ---------------- app / config ----------------
 app = Flask(__name__)
 app.config.from_object(Config)
+
+
+def _init_cors(flask_app: Flask) -> None:
+    """Permite Vite (5173) chamar a API com cookie de sessão quando FMP_ENABLE_CORS=1."""
+    if os.environ.get("FMP_ENABLE_CORS", "").lower() not in ("1", "true", "yes"):
+        return
+    try:
+        from flask_cors import CORS
+    except ImportError:
+        flask_app.logger.warning("FMP_ENABLE_CORS ativo mas flask-cors não está instalado.")
+        return
+    raw = os.environ.get(
+        "FMP_CORS_ORIGINS",
+        "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173",
+    )
+    origins = [x.strip() for x in raw.split(",") if x.strip()]
+    CORS(flask_app, supports_credentials=True, origins=origins)
+
+
+_init_cors(app)
+if os.environ.get("FMP_ENABLE_CORS", "").lower() in ("1", "true", "yes"):
+    # Permite enviar o cookie de sessão em XHR de outra origem (ex.: Vite → Flask em HTTP local).
+    app.config.update(
+        SESSION_COOKIE_SAMESITE="None",
+        SESSION_COOKIE_SECURE=False,
+    )
 
 # ---------------- extensões ----------------
 db.init_app(app)
@@ -99,14 +126,14 @@ def load_user(user_id):
 # ---------------- utilitários ----------------
 def enviar_email_boas_vindas(email, nome):
     try:
-        msg = Message(subject="🎉 Bem-vindo(a) ao SPA - FMPSC!",
+        msg = Message(subject="Bem-vindo(a) ao SPA - FMPSC!",
                       recipients=[email])
         msg.html = f"""
         <div style="font-family:Arial,sans-serif;color:#0B3353;">
             <h2>Olá, {nome}!</h2>
             <p>Seu cadastro no <strong>SPA - Sistema de Perfil Acadêmico</strong> foi realizado com sucesso!</p>
             <p>Agora você pode acessar sua conta e começar a usar a plataforma.</p>
-            <p style="margin-top:20px;">💡 Caso não tenha sido você, ignore este e-mail.</p>
+            <p style="margin-top:20px;">Caso não tenha sido você, ignore este e-mail.</p>
             <br>
             <p>Atenciosamente,<br><strong>Equipe SPA</strong></p>
         </div>
@@ -514,7 +541,7 @@ def reset_senha(token):
 
 
 # ------------------------------------------------------
-# 🔵 MÓDULO DE GRÁFICOS / CSV / ABA DE ANÁLISES
+# Módulo de gráficos / CSV / aba de análises
 # ------------------------------------------------------
 # pastas
 UPLOADS_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'uploads')
@@ -563,16 +590,17 @@ def delete_file():
 
 
 def list_uploaded_files():
-    """Lista CSV na pasta uploads/"""
-    return [f for f in os.listdir(UPLOADS_DIR) if f.lower().endswith('.csv')]
+    """Lista CSV na pasta uploads/."""
+    files = [f for f in os.listdir(UPLOADS_DIR) if f.lower().endswith(".csv")]
+    return sorted(files)
 
 
 def get_arquivos_virtuais():
     """Cria bases virtuais conectadas na API da Faculdade"""
     return [
-        "🟢 API - Todos (Matrículas e Rematrículas)",
-        "🔵 API - Apenas Matrículas (Novatos)",
-        "🟡 API - Apenas Rematrículas (Veteranos)"
+        "API - Todos (Matrículas e Rematrículas)",
+        "API - Apenas Matrículas (Novatos)",
+        "API - Apenas Rematrículas (Veteranos)",
     ]
 
 @app.route('/list_files')
@@ -593,8 +621,13 @@ def load_csv(filename):
     return pd.read_csv(path)
 
 def load_dataframe_by_name(nome):
-    """Lê do CSV ou faz o filtro inteligente direto da API"""
-    if nome.startswith("🟢") or nome.startswith("🔵") or nome.startswith("🟡") or nome == "__DB_DATA__":
+    """Lê CSV local ou matrículas/rematrículas via API da faculdade (inclui __DB_DATA__)."""
+    if (
+        nome.startswith("API - Todos")
+        or nome.startswith("API - Apenas Matrículas")
+        or nome.startswith("API - Apenas Rematrículas")
+        or nome == "__DB_DATA__"
+    ):
         try:
             response = requests.get(faculdade_api_url('api/todas-matriculas'), timeout=60)
             response.raise_for_status()
@@ -607,7 +640,7 @@ def load_dataframe_by_name(nome):
 
         if not data_list:
             fb_name = (app.config.get('FACULDADE_FALLBACK_CSV') or '').strip()
-            if nome.startswith("🟢") and fb_name:
+            if (nome.startswith("API - Todos") or nome == "__DB_DATA__") and fb_name:
                 fb_path = os.path.join(UPLOADS_DIR, fb_name)
                 if os.path.isfile(fb_path):
                     app.logger.warning(
@@ -615,7 +648,9 @@ def load_dataframe_by_name(nome):
                     )
                     return pd.read_csv(fb_path)
             extra = ""
-            if nome.startswith("🔵") or nome.startswith("🟡"):
+            if nome.startswith("API - Apenas Matrículas") or nome.startswith(
+                "API - Apenas Rematrículas"
+            ):
                 extra = (
                     " Filtros de novatos/veteranos exigem a coluna 'Tipo de Matrícula' na API; "
                     "cadastre matrículas na API ou use apenas 'API - Todos' com dados populados."
@@ -623,18 +658,17 @@ def load_dataframe_by_name(nome):
             raise Exception(
                 "Nenhum dado na API da faculdade (banco vazio ou ainda sem matrículas). "
                 "Soluções: (1) Com a API no ar, rode backend/test_data/automation_matricula_api.py --execute; "
-                "(2) Na Base de Análise, escolha um arquivo .csv da pasta uploads (ex.: 2024.csv); "
-                "(3) Mantenha 2024.csv em uploads/ — o sistema pode usar como fallback automático só em "
-                "'API - Todos' (variável FACULDADE_FALLBACK_CSV)."
+                "(2) Na Base de Análise, escolha um CSV em uploads (ex.: 2024.csv); "
+                "(3) Coloque um CSV em uploads/ ou defina FACULDADE_FALLBACK_CSV — fallback em 'API - Todos', "
+                "'Banco de Dados' e __DB_DATA__."
                 + extra
             )
 
         df = pd.DataFrame(data_list)
 
-        # Faz o filtro mágico usando o Pandas!
-        if nome.startswith("🔵 API"):
+        if nome.startswith("API - Apenas Matrículas"):
             df = df[df['Tipo de Matrícula'] == 'Matrícula']
-        elif nome.startswith("🟡 API"):
+        elif nome.startswith("API - Apenas Rematrículas"):
             df = df[df['Tipo de Matrícula'] == 'Rematrícula']
 
         if df.empty:
@@ -671,7 +705,20 @@ def api_columns():
             "sample_values": col_data.dropna().astype(str).unique()[:10].tolist()
         })
 
-    return jsonify(columns=cols)
+    periods, cursos = get_periods_cursos(df)
+    return jsonify(
+        columns=cols,
+        questions=COORDINATOR_QUESTIONS,
+        periods=periods,
+        cursos=cursos,
+    )
+
+
+@app.route("/api/coordinator_questions", methods=["GET"])
+@login_required
+def api_coordinator_questions():
+    """Lista só as perguntas orientadas (útil se /api/columns falhar por base inválida)."""
+    return jsonify(questions=COORDINATOR_QUESTIONS)
 
 
 # ---------------- API: ANÁLISE ORIENTADA (COORDENADORES) ----------------
@@ -718,6 +765,33 @@ def api_coordinator_analysis():
             non_remat_csv_bytes(rows)
         ).decode("ascii")
     result["extras"] = extras
+    return jsonify(result)
+
+
+@app.route("/api/intelligent_crossings", methods=["GET"])
+@login_required
+def api_intelligent_crossings():
+    """Catálogo de cruzamentos inteligentes (metadados para a UI)."""
+    return jsonify(crossings=INTELLIGENT_CROSSINGS)
+
+
+@app.route("/api/intelligent_cross", methods=["POST"])
+@login_required
+def api_intelligent_cross():
+    data = request.get_json() or {}
+    filename = data.get("filename")
+    crossing_id = data.get("crossing_id")
+    periodo = (data.get("periodo") or "").strip() or None
+    curso = (data.get("curso") or "").strip() or None
+    if not filename or not crossing_id:
+        return jsonify(error="Informe filename e crossing_id."), 400
+    try:
+        df = load_dataframe_by_name(filename)
+    except Exception as e:
+        return jsonify(error=str(e)), 400
+    result = run_intelligent_cross_analysis(df, crossing_id, periodo, curso)
+    if result.get("error"):
+        return jsonify(error=result["error"]), 400
     return jsonify(result)
 
 

@@ -58,8 +58,8 @@ class Enrollment(db.Model):
     # Pergunta 14: Atividade principal
     atividade_principal = db.Column(db.String(50), nullable=False)
 
-    # Pergunta 15: Jornada de trabalho
-    jornada_trabalho = db.Column(db.String(10), nullable=False)
+    # Pergunta 15: Jornada de trabalho (valores do formulário podem passar de 10 caracteres)
+    jornada_trabalho = db.Column(db.String(50), nullable=False)
 
     # Pergunta 16: Filhos/Dependentes
     tem_filhos = db.Column(db.String(10), nullable=False)

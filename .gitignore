@@ -15,9 +15,9 @@ build/
 backend/instance/
 *.db
 
-# Node / frontend
-frontend/node_modules/
-frontend/dist/
+# Node / site estático (Vite)
+backend/frontend/node_modules/
+backend/frontend/dist/
 *.tsbuildinfo
 
 # IDE / OS

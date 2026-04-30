@@ -13,7 +13,7 @@
   function togglePasso2Sections() {
     const coordQ = qs("coordQuestionSelect")?.value;
     const guided = Boolean(coordQ && String(coordQ).trim() !== "");
-    qs("fmpGuidedFilters")?.classList.toggle("d-none", !guided);
+    /* Período/curso ficam visíveis também no modo manual (Cruzamento Inteligente usa os mesmos selects). */
     qs("fmpManualConfig")?.classList.toggle("d-none", guided);
     qs("fmpCoordPanel")?.classList.toggle("d-none", !guided);
   }
@@ -79,15 +79,15 @@
     if (hint) {
       if (!step1) {
         hint.textContent =
-          "Selecione a origem e a base de análise (ou API / banco).";
+          "Comece escolhendo de onde vêm os dados e qual lista você quer analisar.";
       } else if (coordQ) {
         hint.textContent =
-          "Pergunta orientada selecionada — clique em «Gerar resposta» abaixo.";
+          "Ótimo! Agora é só tocar em «Gerar resposta» no cartão azul para ver o resultado.";
       } else if (manualOk) {
-        hint.textContent = `Gráfico de ${tipoLabel(tipo)} — Coluna: ${col}`;
+        hint.textContent = `Pronto para gerar: ${tipoLabel(tipo)} sobre «${col}».`;
       } else {
         hint.textContent =
-          "Escolha coluna e tipo de gráfico (manual) ou uma pergunta orientada.";
+          "Escolha uma pergunta pronta ou preencha coluna e tipo de gráfico para seguir.";
       }
     }
 
@@ -100,7 +100,7 @@
       const circle = (el, num, done, active) => {
         const c = el.querySelector(".fmp-step-circle");
         if (!c) return;
-        c.innerHTML = done ? "✓" : String(num);
+        c.innerHTML = done ? "OK" : String(num);
       };
       setStep(steps[0], step1 ? "fmp-step-done" : "fmp-step-active");
       circle(steps[0], 1, step1, !step1);

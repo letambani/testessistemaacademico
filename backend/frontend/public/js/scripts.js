@@ -5,6 +5,37 @@
 const qs = id => document.getElementById(id);
 const showError = msg => alert(msg);
 
+function fmpBackendOrigin() {
+  const m = document.querySelector('meta[name="fmp-backend-origin"]');
+  if (!m || !m.content) return '';
+  return String(m.content).trim().replace(/\/$/, '');
+}
+
+/** URL do Flask quando o site é estático (ex.: GitHub Pages); senão paths relativos na mesma origem. */
+function fmpApi(path) {
+  const p = path.startsWith('/') ? path : `/${path}`;
+  const o = fmpBackendOrigin();
+  return o ? o + p : p;
+}
+
+/** fetch com cookie de sessão quando a API está em outra origem (ex.: Vite 5173 → Flask 5050). */
+function fmpFetch(input, init) {
+  const opts = init ? { ...init } : {};
+  const url = typeof input === 'string' ? input : String(input);
+  const backend = fmpBackendOrigin();
+  if (opts.credentials === undefined && backend) {
+    try {
+      const reqOrigin = new URL(url, location.href).origin;
+      opts.credentials = reqOrigin !== location.origin ? 'include' : 'same-origin';
+    } catch (e) {
+      opts.credentials = 'same-origin';
+    }
+  } else if (opts.credentials === undefined) {
+    opts.credentials = 'same-origin';
+  }
+  return fetch(input, opts);
+}
+
 /** Rola a página até a área de resultados (index-1 / index com #secaoResultado). */
 function scrollToSecaoResultado() {
   const el = document.getElementById('secaoResultado');
@@ -26,7 +57,7 @@ qs('uploadBtnModal')?.addEventListener('click', () => {
   const fd = new FormData();
   fd.append('file', file);
 
-  fetch('/upload', { method: 'POST', body: fd })
+  fmpFetch(fmpApi('/upload'), { method: 'POST', body: fd })
     .then(r => r.json())
     .then(js => {
       if (js.success) {
@@ -40,12 +71,10 @@ qs('uploadBtnModal')?.addEventListener('click', () => {
 });
 
 // Carrega lista de arquivos ao abrir o modal
-document.getElementById("manageFilesModal")
-  .addEventListener("shown.bs.modal", loadFilesList);
-
+document.getElementById("manageFilesModal")?.addEventListener("shown.bs.modal", loadFilesList);
 
 // Buscar arquivos em tempo real
-document.getElementById("searchFiles").addEventListener("keyup", () => {
+document.getElementById("searchFiles")?.addEventListener("keyup", () => {
   const term = document.getElementById("searchFiles").value.toLowerCase();
   const items = document.querySelectorAll("#filesList li");
 
@@ -57,10 +86,11 @@ document.getElementById("searchFiles").addEventListener("keyup", () => {
 
 // Função para carregar arquivos
 function loadFilesList() {
-  fetch("/list_files")
+  fmpFetch(fmpApi("/list_files"))
     .then(r => r.json())
     .then(data => {
       const list = document.getElementById("filesList");
+      if (!list) return;
       list.innerHTML = "";
 
       if (data.files.length === 0) {
@@ -88,7 +118,7 @@ function deleteFile(filename) {
     return;
   }
 
-  fetch("/delete_file", {
+  fmpFetch(fmpApi("/delete_file"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename })
@@ -100,6 +130,85 @@ function deleteFile(filename) {
         alert("Arquivo removido com sucesso.");
       } else {
         alert("Erro ao remover: " + data.error);
+      }
+    });
+}
+
+/** CSVs que o repositório mantém em backend/uploads/ — sempre listados em “Arquivos CSV”. */
+const FMP_FALLBACK_CSV_FILES = ['2024.csv', '2025.csv'];
+
+function mergeCsvFileList(fromApi) {
+  const out = [];
+  const seen = new Set();
+  const add = (f) => {
+    const n = String(f || '').trim();
+    if (!n || seen.has(n.toLowerCase())) return;
+    seen.add(n.toLowerCase());
+    out.push(n);
+  };
+  (fromApi || []).forEach(add);
+  FMP_FALLBACK_CSV_FILES.forEach(add);
+  out.sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+  return out;
+}
+
+function applyArquivoSelectOptions(files) {
+  const sel = qs('arquivoSelect');
+  const cmp = qs('arquivoCompare');
+  if (!sel || !cmp) return;
+  const placeholder = 'Selecione uma base...';
+  sel.innerHTML = '';
+  const o0 = document.createElement('option');
+  o0.value = '';
+  o0.textContent = placeholder;
+  sel.appendChild(o0);
+  cmp.innerHTML = '<option value="">(nenhum)</option>';
+  files.forEach((f) => {
+    if (f == null || String(f).trim() === '') return;
+    const name = String(f);
+    const o = document.createElement('option');
+    o.value = name;
+    o.textContent = name;
+    sel.appendChild(o);
+    const o2 = document.createElement('option');
+    o2.value = name;
+    o2.textContent = name;
+    cmp.appendChild(o2);
+  });
+  try {
+    window.dispatchEvent(new CustomEvent('fmpFilesLoaded'));
+  } catch (e) { /* ignore */ }
+}
+
+/** Preenche os selects da análise (no Flask isso vem do template; no site estático vem da API). */
+function loadArquivoSelectsFromServer() {
+  const sel = qs('arquivoSelect');
+  const cmp = qs('arquivoCompare');
+  if (!sel || !cmp) return;
+  const origin = qs('dataOrigin')?.value || 'csv';
+  const isCsvOrigin = origin === 'csv';
+  if (sel.querySelectorAll('option').length > 1) {
+    try {
+      window.dispatchEvent(new CustomEvent('fmpFilesLoaded'));
+    } catch (e) { /* ignore */ }
+    return;
+  }
+  fmpFetch(fmpApi('/list_files'))
+    .then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    })
+    .then((data) => {
+      let raw = data && Array.isArray(data.files) ? data.files : [];
+      if (isCsvOrigin) {
+        raw = raw.filter((f) => String(f).toLowerCase().endsWith('.csv'));
+      }
+      const files = isCsvOrigin ? mergeCsvFileList(raw) : raw;
+      applyArquivoSelectOptions(files);
+    })
+    .catch(() => {
+      if (isCsvOrigin) {
+        applyArquivoSelectOptions(mergeCsvFileList([]));
       }
     });
 }
@@ -131,6 +240,11 @@ qs('dataOrigin')?.addEventListener('change', () => {
     qs('colunaSelect').innerHTML = '<option value="">Selecione um arquivo primeiro</option>';
     qs('colunaGroupBy').innerHTML = '<option value="">Nenhum agrupamento</option>';
     qs('filtersArea').innerHTML = '';
+    const selCsv = qs('arquivoSelect');
+    const cmpCsv = qs('arquivoCompare');
+    if (selCsv) selCsv.innerHTML = '<option value="">Selecione uma base...</option>';
+    if (cmpCsv) cmpCsv.innerHTML = '<option value="">(nenhum)</option>';
+    loadArquivoSelectsFromServer();
   }
 });
 
@@ -141,55 +255,117 @@ qs('arquivoSelect')?.addEventListener('change', () => {
   loadColumns(filename);
 });
 
+function resetColumnPickersOnFault(hint) {
+  const colSel = qs('colunaSelect');
+  const grpSel = qs('colunaGroupBy');
+  const filt = qs('filtersArea');
+  const msg = hint || 'Não foi possível carregar as colunas desta base.';
+  if (colSel) colSel.innerHTML = `<option value="">${msg}</option>`;
+  if (grpSel) grpSel.innerHTML = '<option value="">Nenhum agrupamento</option>';
+  if (filt) filt.innerHTML = '';
+}
+
+/** Só as perguntas (sem DataFrame) — preenche o select se /api/columns falhar. */
+function loadCoordinatorQuestionsFallback() {
+  return fmpFetch(fmpApi('/api/coordinator_questions'))
+    .then(async (r) => {
+      let js = {};
+      try {
+        js = await r.json();
+      } catch (e) {
+        return;
+      }
+      if (!r.ok || !Array.isArray(js.questions) || !js.questions.length) return;
+      fillCoordinatorFromMeta({ questions: js.questions, periods: [], cursos: [] });
+    })
+    .catch(() => {});
+}
+
 function loadColumns(filename) {
-  qs('colunaSelect').innerHTML = '<option value="">Carregando colunas...</option>';
-  qs('colunaGroupBy').innerHTML = '<option value="">Nenhum agrupamento</option>';
-  qs('filtersArea').innerHTML = '';
+  const colSel = qs('colunaSelect');
+  const grpSel = qs('colunaGroupBy');
+  const filt = qs('filtersArea');
+  if (!colSel || !grpSel || !filt) return;
+
+  colSel.innerHTML = '<option value="">Carregando colunas...</option>';
+  grpSel.innerHTML = '<option value="">Nenhum agrupamento</option>';
+  filt.innerHTML = '';
 
   if (!filename) {
-    qs('colunaSelect').innerHTML = '<option value="">Selecione um arquivo primeiro</option>';
+    colSel.innerHTML = '<option value="">Selecione um arquivo primeiro</option>';
     return;
   }
 
-  fetch('/api/columns', {
+  fmpFetch(fmpApi('/api/columns'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ filename })
   })
-    .then(r => r.json())
-    .then(js => {
-      if (js.error) { showError(js.error); return; }
-      // popular selects
-      qs('colunaSelect').innerHTML = '<option value="">-- escolha --</option>';
-      qs('colunaGroupBy').innerHTML = '<option value="">Nenhum agrupamento</option>';
-      js.columns.forEach(c => {
-        const o = document.createElement('option'); o.value = c.name; o.textContent = c.name;
-        qs('colunaSelect').appendChild(o);
-        const o2 = o.cloneNode(true); qs('colunaGroupBy').appendChild(o2);
-      });
+    .then(async (r) => {
+      let js = {};
+      try {
+        js = await r.json();
+      } catch (e) {
+        js = { error: 'Resposta inválida do servidor (não é JSON).' };
+      }
+      if (!r.ok || js.error) {
+        showError(js.error || ('Erro HTTP ' + r.status));
+        resetColumnPickersOnFault('Escolha outra base ou confira o login no servidor.');
+        await loadCoordinatorQuestionsFallback();
+        return;
+      }
+      if (!Array.isArray(js.columns)) {
+        showError('Resposta sem lista de colunas.');
+        resetColumnPickersOnFault('Formato inesperado da API.');
+        await loadCoordinatorQuestionsFallback();
+        return;
+      }
+      try {
+        colSel.innerHTML = '<option value="">-- escolha --</option>';
+        grpSel.innerHTML = '<option value="">Nenhum agrupamento</option>';
+        js.columns.forEach((c) => {
+          const o = document.createElement('option');
+          o.value = c.name;
+          o.textContent = c.name;
+          colSel.appendChild(o);
+          const o2 = o.cloneNode(true);
+          grpSel.appendChild(o2);
+        });
 
-      // criar filtros para colunas categóricas
-      const filtersDiv = qs('filtersArea');
-      filtersDiv.innerHTML = '<div class="small mb-2 text-muted">Filtros rápidos (marque valores)</div>';
-      js.columns.forEach(c => {
-        if (!c.is_numeric && c.unique_values_count <= 40) {
-          const box = document.createElement('div'); box.className = 'mb-2';
-          box.innerHTML = `<strong class="small">${c.name}</strong><div class="small mt-1" id="filter_${safeId(c.name)}"></div>`;
-          filtersDiv.appendChild(box);
-          const container = box.querySelector('div');
-          c.sample_values.forEach(v => {
-            const id = `cb_${safeId(c.name)}_${safeId(String(v))}`;
-            const html = `<div class="form-check form-check-inline">
+        filt.innerHTML = '<div class="small mb-2 text-muted">Filtros rápidos (marque valores)</div>';
+        js.columns.forEach((c) => {
+          if (!c.is_numeric && c.unique_values_count <= 40) {
+            const box = document.createElement('div');
+            box.className = 'mb-2';
+            box.innerHTML = `<strong class="small">${c.name}</strong><div class="small mt-1" id="filter_${safeId(c.name)}"></div>`;
+            filt.appendChild(box);
+            const container = box.querySelector('div');
+            (c.sample_values || []).forEach((v) => {
+              const id = `cb_${safeId(c.name)}_${safeId(String(v))}`;
+              const html = `<div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="${id}" data-col="${c.name}" value="${v}">
             <label class="form-check-label small" for="${id}">${v}</label>
           </div>`;
-            container.insertAdjacentHTML('beforeend', html);
-          });
+              container.insertAdjacentHTML('beforeend', html);
+            });
+          }
+        });
+        if (Array.isArray(js.questions) && js.questions.length) {
+          fillCoordinatorFromMeta(js);
+        } else {
+          loadCoordinatorMeta(filename);
         }
-      });
-      loadCoordinatorMeta(filename);
+      } catch (e) {
+        showError('Erro ao montar colunas ou filtros.');
+        resetColumnPickersOnFault('Erro ao processar a resposta.');
+        await loadCoordinatorQuestionsFallback();
+      }
     })
-    .catch(() => showError('Erro ao buscar colunas.'));
+    .catch(async () => {
+      showError('Erro ao buscar colunas.');
+      resetColumnPickersOnFault('Sem conexão com o servidor?');
+      await loadCoordinatorQuestionsFallback();
+    });
 }
 
 function safeId(s) { return String(s).replace(/\s+/g, '_').replace(/[^\w_-]/g, ''); }
@@ -222,7 +398,7 @@ function renderGraphs(resp) {
     header.style.background = '#0B3353';
     header.innerHTML = `<div><strong>${g.title}</strong></div>
       <div class="btn-group">
-        <button class="btn btn-sm btn-outline-secondary" onclick="downloadPlotlyPNG('chart_${idx}')">📥 PNG</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="downloadPlotlyPNG('chart_${idx}')">Baixar PNG</button>
       </div>`;
     card.appendChild(header);
 
@@ -295,7 +471,7 @@ qs('btnGerar')?.addEventListener('click', () => {
       modo: "texto"
     };
 
-    fetch('/api/grafico', {
+    fmpFetch(fmpApi('/api/grafico'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -310,8 +486,8 @@ qs('btnGerar')?.addEventListener('click', () => {
       <div class="card-header d-flex justify-content-between align-items-center" style="background:#0B3353; color:white;">
           <strong>Relatório por Extenso</strong>
           <div class="btn-group">
-              <button class="btn btn-sm btn-outline-light" onclick="copyReport()">📋 Copiar</button>
-              <button class="btn btn-sm btn-outline-light" onclick="downloadReportTXT()">📥 TXT</button>
+              <button class="btn btn-sm btn-outline-light" onclick="copyReport()">Copiar</button>
+              <button class="btn btn-sm btn-outline-light" onclick="downloadReportTXT()">Baixar TXT</button>
           </div>
       </div>
 
@@ -336,7 +512,7 @@ qs('btnGerar')?.addEventListener('click', () => {
 
   const payload = { filename, coluna, tipo, filtros, groupby };
 
-  fetch('/api/grafico', {
+  fmpFetch(fmpApi('/api/grafico'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -361,7 +537,7 @@ qs('btnGerarComparar')?.addEventListener('click', () => {
   const compare = qs('arquivoCompare').value;
   const coluna = qs('colunaSelect').value;
 
-  // 🔧 Ajuste do tipo de gráfico
+  // Ajuste do tipo de gráfico
   let tipo = qs('tipoSelect').value;
   if (tipo === 'histogram') {
     tipo = 'hist'; // <-- conversão para a API
@@ -375,7 +551,7 @@ qs('btnGerarComparar')?.addEventListener('click', () => {
 
   const payload = { filename, compare_with: compare, coluna, tipo, filtros: gatherFilters(), groupby };
 
-  fetch('/api/grafico', {
+  fmpFetch(fmpApi('/api/grafico'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -432,56 +608,77 @@ function coordBadgeOriented() {
   if (b) { b.textContent = 'Modo orientado por pergunta'; b.className = 'badge rounded-pill bg-info text-dark'; }
 }
 
-function resetCoordinatorSelects() {
-  const q = qs('coordQuestionSelect');
-  const p = qs('coordPeriodSelect');
-  const c = qs('coordCursoSelect');
-  if (q) q.innerHTML = '<option value="">— Nenhuma (configurar manualmente) —</option>';
-  if (p) p.innerHTML = '<option value="">Todos os períodos</option>';
-  if (c) c.innerHTML = '<option value="">Todos os cursos</option>';
+/** Preenche período/curso/perguntas orientadas (payload igual ao /api/coordinator_meta). */
+function fillCoordinatorFromMeta(js) {
+  const qSel = qs('coordQuestionSelect');
+  const pSel = qs('coordPeriodSelect');
+  const cSel = qs('coordCursoSelect');
+  if (!qSel || !pSel || !cSel) return;
+  const questions = (js && Array.isArray(js.questions)) ? js.questions : [];
+  const periods = (js && Array.isArray(js.periods)) ? js.periods : [];
+  const cursos = (js && Array.isArray(js.cursos)) ? js.cursos : [];
+  qSel.innerHTML = '<option value="">— Nenhuma (configurar manualmente) —</option>';
+  pSel.innerHTML = '<option value="">Todos os períodos</option>';
+  cSel.innerHTML = '<option value="">Todos os cursos</option>';
+  questions.forEach((q) => {
+    const o = document.createElement('option');
+    o.value = q.id;
+    o.textContent = q.label;
+    o.title = q.description || '';
+    qSel.appendChild(o);
+  });
+  periods.forEach((p) => {
+    const o = document.createElement('option');
+    o.value = p;
+    o.textContent = p;
+    pSel.appendChild(o);
+  });
+  cursos.forEach((c) => {
+    const o = document.createElement('option');
+    o.value = c;
+    o.textContent = c;
+    cSel.appendChild(o);
+  });
   const btn = qs('btnCoordGerar');
   if (btn) btn.disabled = true;
   const h = qs('coordHint');
   if (h) { h.classList.add('d-none'); h.textContent = ''; }
   coordBadgeManual();
+  if (questions.length) {
+    try {
+      window.dispatchEvent(new CustomEvent('fmpCoordinatorMetaLoaded'));
+    } catch (e) { /* ignore */ }
+  }
+}
+
+function resetCoordinatorSelects() {
+  fillCoordinatorFromMeta({ questions: [], periods: [], cursos: [] });
 }
 
 function loadCoordinatorMeta(filename) {
   resetCoordinatorSelects();
   if (!filename) return;
-  fetch('/api/coordinator_meta', {
+  fmpFetch(fmpApi('/api/coordinator_meta'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ filename })
   })
-    .then(r => r.json())
-    .then(js => {
-      if (js.error) { return; }
-      const qSel = qs('coordQuestionSelect');
-      const pSel = qs('coordPeriodSelect');
-      const cSel = qs('coordCursoSelect');
-      (js.questions || []).forEach(q => {
-        const o = document.createElement('option');
-        o.value = q.id;
-        o.textContent = q.label;
-        o.title = q.description || '';
-        qSel.appendChild(o);
-      });
-      (js.periods || []).forEach(p => {
-        const o = document.createElement('option');
-        o.value = p;
-        o.textContent = p;
-        pSel.appendChild(o);
-      });
-      (js.cursos || []).forEach(c => {
-        const o = document.createElement('option');
-        o.value = c;
-        o.textContent = c;
-        cSel.appendChild(o);
-      });
-      window.dispatchEvent(new CustomEvent('fmpCoordinatorMetaLoaded'));
+    .then((r) => {
+      if (!r.ok) {
+        return r.json().then((j) => Promise.reject(new Error(j.error || r.statusText || String(r.status))));
+      }
+      return r.json();
     })
-    .catch(() => {});
+    .then((js) => {
+      if (js.error) {
+        showError(js.error);
+        return;
+      }
+      fillCoordinatorFromMeta(js);
+    })
+    .catch((e) => {
+      showError(e.message || 'Erro ao carregar perguntas orientadas.');
+    });
 }
 
 qs('arquivoSelect')?.addEventListener('change', () => {
@@ -555,7 +752,7 @@ function renderCoordinatorAnalysis(resp) {
       card.innerHTML = `
       <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:#f8f9fa;">
         <strong>${escapeHtml(g.title || '')}</strong>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadLeafletMapPng('${plotId}')">📥 PNG</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadLeafletMapPng('${plotId}')">Baixar PNG</button>
       </div>
       <div class="card-body p-2">
         <div id="${plotId}" class="coord-leaflet-map"></div>
@@ -569,7 +766,7 @@ function renderCoordinatorAnalysis(resp) {
     card.innerHTML = `
       <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:#f8f9fa;">
         <strong>${escapeHtml(g.title || '')}</strong>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadPlotlyPNG('${plotId}')">📥 PNG</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadPlotlyPNG('${plotId}')">Baixar PNG</button>
       </div>
       <div class="card-body p-2"><div id="${plotId}" style="min-height:420px;"></div></div>`;
     mount.appendChild(card);
@@ -759,7 +956,7 @@ function renderGeneralReport(resp) {
       card.innerHTML = `
         <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:#f8f9fa;">
           <strong>${escapeHtml(b.title || '')}</strong>
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadPlotlyPNG('${plotId}')">📥 PNG</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadPlotlyPNG('${plotId}')">Baixar PNG</button>
         </div>
         <div class="card-body p-2"><div id="${plotId}" style="min-height:400px;"></div></div>`;
       blocksMount.appendChild(card);
@@ -779,7 +976,7 @@ function renderGeneralReport(resp) {
       card.innerHTML = `
         <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:#f8f9fa;">
           <strong>${escapeHtml(b.title || '')}</strong>
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadLeafletMapPng('${plotId}')">📥 PNG</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadLeafletMapPng('${plotId}')">Baixar PNG</button>
         </div>
         <div class="card-body p-2">
           <div id="${plotId}" class="coord-leaflet-map"></div>
@@ -1035,7 +1232,7 @@ qs('btnCoordGerar')?.addEventListener('click', () => {
     return;
   }
   setCoordLoading(true);
-  fetch('/api/coordinator_analysis', {
+  fmpFetch(fmpApi('/api/coordinator_analysis'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1056,4 +1253,130 @@ qs('btnCoordGerar')?.addEventListener('click', () => {
       showError('Erro ao gerar análise orientada.');
     });
 });
+
+// ----- Cruzamento inteligente (dedupe por e-mail no servidor) -----
+let IC_CATALOG = [];
+
+function setIcCatalogLoading(on) {
+  const el = qs('icCrossLoading');
+  if (el) el.classList.toggle('d-none', !on);
+}
+
+function loadIntelligentCrossCatalog() {
+  setIcCatalogLoading(true);
+  fmpFetch(fmpApi('/api/intelligent_crossings'))
+    .then((r) => {
+      if (!r.ok) return r.json().then((j) => Promise.reject(new Error(j.error || r.statusText)));
+      return r.json();
+    })
+    .then((js) => {
+      IC_CATALOG = Array.isArray(js.crossings) ? js.crossings : [];
+      renderIntelligentCrossCards();
+    })
+    .catch(() => {
+      IC_CATALOG = [];
+      renderIntelligentCrossCards();
+    })
+    .finally(() => setIcCatalogLoading(false));
+}
+
+function renderIntelligentCrossCards() {
+  const mount = qs('icCrossCards');
+  const empty = qs('icCrossEmpty');
+  if (!mount) return;
+  mount.innerHTML = '';
+  const origin = qs('dataOrigin')?.value;
+  const filename = origin === 'db' ? '__DB_DATA__' : qs('arquivoSelect')?.value;
+  const hasBase = Boolean(filename && String(filename).trim());
+  if (empty) {
+    empty.classList.toggle('d-none', hasBase);
+  }
+  if (!hasBase || !IC_CATALOG.length) {
+    return;
+  }
+  IC_CATALOG.forEach((c) => {
+    const col = document.createElement('div');
+    col.className = 'col';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'card h-100 text-start border shadow-sm fmp-ic-card transition-all';
+    btn.dataset.crossingId = c.id;
+    btn.innerHTML = `
+      <div class="card-body py-3 px-3">
+        <span class="badge bg-primary bg-opacity-10 text-primary small mb-2">${escapeHtml(c.chart_type || '')}</span>
+        <div class="fw-semibold text-body">${escapeHtml(c.label || '')}</div>
+        <p class="small text-muted mb-0 mt-1">${escapeHtml(c.description || '')}</p>
+      </div>`;
+    btn.title = c.description || '';
+    btn.addEventListener('click', () => runIntelligentCross(c.id, btn));
+    col.appendChild(btn);
+    mount.appendChild(col);
+  });
+}
+
+function highlightIcCard(btn) {
+  document.querySelectorAll('.fmp-ic-card').forEach((el) => {
+    el.classList.remove('border-primary', 'border-2', 'shadow', 'bg-primary', 'bg-opacity-5');
+  });
+  if (btn) {
+    btn.classList.add('border-primary', 'border-2', 'shadow', 'bg-primary', 'bg-opacity-5');
+  }
+}
+
+function setIcRunLoading(on) {
+  document.querySelectorAll('.fmp-ic-card').forEach((el) => {
+    el.disabled = on;
+    el.classList.toggle('opacity-50', on);
+  });
+}
+
+function runIntelligentCross(crossingId, cardBtn) {
+  const origin = qs('dataOrigin').value;
+  const filename = origin === 'db' ? '__DB_DATA__' : qs('arquivoSelect').value;
+  if (!filename) {
+    showError('Selecione uma base de análise no Passo 1.');
+    return;
+  }
+  const periodo = (qs('coordPeriodSelect') && qs('coordPeriodSelect').value) || '';
+  const curso = (qs('coordCursoSelect') && qs('coordCursoSelect').value) || '';
+  highlightIcCard(cardBtn);
+  setIcRunLoading(true);
+  fmpFetch(fmpApi('/api/intelligent_cross'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, crossing_id: crossingId, periodo, curso })
+  })
+    .then((r) => r.json())
+    .then((js) => {
+      setIcRunLoading(false);
+      if (js.error) {
+        showError(js.error);
+        return;
+      }
+      renderCoordinatorAnalysis(js);
+    })
+    .catch(() => {
+      setIcRunLoading(false);
+      showError('Erro ao gerar cruzamento inteligente.');
+    });
+}
+
+window.addEventListener('fmpCoordinatorMetaLoaded', () => {
+  renderIntelligentCrossCards();
+});
+qs('arquivoSelect')?.addEventListener('change', () => {
+  renderIntelligentCrossCards();
+});
+qs('dataOrigin')?.addEventListener('change', () => {
+  renderIntelligentCrossCards();
+});
+
+(function initFmpAnalisesStatic() {
+  function run() {
+    loadArquivoSelectsFromServer();
+    loadIntelligentCrossCatalog();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();
 

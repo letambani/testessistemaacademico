@@ -33,6 +33,8 @@ def _terminate_all():
 
 def main():
     env = os.environ.copy()
+    if "FMP_ENABLE_CORS" not in env:
+        env["FMP_ENABLE_CORS"] = "1"
     fac_port = env.get("FACULDADE_PORT", "5001")
     spa_port = env.get("SPA_PORT", "5050")
     env["FACULDADE_PORT"] = str(fac_port)

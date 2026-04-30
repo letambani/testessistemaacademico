@@ -8,7 +8,7 @@ class Config:
 
     # API do módulo faculdade (faculdade_app.py na porta 5001 por padrão)
     FACULDADE_API_BASE_URL = os.getenv('FACULDADE_API_BASE_URL', 'http://127.0.0.1:5001')
-    # Se a API retornar [], usar este CSV em uploads/ só para "🟢 API - Todos" (desenvolvimento/demo)
+    # Se a API retornar [], usar este CSV em uploads/ só para "API - Todos" (desenvolvimento/demo).
     FACULDADE_FALLBACK_CSV = os.getenv('FACULDADE_FALLBACK_CSV', '2024.csv')
 
     # Google Gemini (opcional — chat de análises)

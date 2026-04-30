@@ -1,16 +1,16 @@
 # Sistema acadêmico (SPA + backend)
 
-Monorepo com **frontend** (React + Vite, estático) e **backend** (Flask/Python). O site público no **GitHub Pages** publica apenas o build estático do frontend; o backend precisa rodar em outro ambiente (máquina local, VPS, etc.).
+Monorepo com **tudo sob `backend/`**: API Flask/Python, templates, e o **site estático** (React + Vite) em `backend/frontend/`. O **GitHub Pages** publica só o build em `backend/frontend/dist/`; o servidor Python corre noutro ambiente (local, VPS, etc.).
 
 ## Estrutura de pastas
 
 | Pasta / arquivo | Conteúdo |
 |-----------------|----------|
-| `frontend/` | `index.html`, `cadastro.html`, `recuperar_senha.html` (espelhos dos templates Flask), `index-1.html`. Build em `frontend/dist/`. |
-| `backend/` | Flask (`app.py`, `faculdade_app.py`), templates HTML, `static/`, modelos, testes, `test_data/`. |
-| `run_stack.py` | Na raiz: delega para `backend/run_stack.py` (sobe API da faculdade + SPA Flask conforme script). |
+| `backend/` | Flask (`app.py`, `faculdade_app.py`), `templates/`, `static/`, modelos, testes, `test_data/`. |
+| `backend/frontend/` | Vite + React: `index.html`, `cadastro.html`, `recuperar_senha.html`, `index-1.html` (espelhos dos templates). Build em `backend/frontend/dist/`. |
+| `run_stack.py` | Na raiz: delega para `backend/run_stack.py` (API da faculdade + SPA Flask). |
 | `requirements.txt` | Na raiz: inclui `backend/requirements.txt`. |
-| `.github/workflows/deploy-gh-pages.yml` | Build do frontend e deploy para GitHub Pages (branch `main`). |
+| `.github/workflows/deploy-gh-pages.yml` | Build do Vite e deploy para GitHub Pages (branch `main`). |
 
 ## Rodar localmente
 
@@ -27,53 +27,56 @@ python run_stack.py
 
 Portas padrão: faculdade **5001**, SPA principal **5050** (ajustável com `FACULDADE_PORT` e `SPA_PORT`). Detalhes em `backend/run_stack.py`.
 
-### Frontend (desenvolvimento com proxy para API)
+### Site estático / Vite (desenvolvimento com proxy para API)
 
-Com o backend atendendo em `5050` (ou a porta que o Vite apontar no proxy), em outro terminal:
+Com o backend atendendo em `5050`, noutro terminal:
 
 ```bash
-cd frontend
+cd backend/frontend
 npm ci
 npm run dev
 ```
 
-O Vite (`frontend/vite.config.ts`) encaminha `/api`, `/list_files`, `/upload` e `/delete_file` para `http://127.0.0.1:5050`.
+O Vite (`backend/frontend/vite.config.ts`) encaminha `/api`, `/list_files`, `/upload` e `/delete_file` para `http://127.0.0.1:5050`.
 
-### Build de produção do frontend
+### Build de produção (GitHub Pages)
 
-Para o mesmo **base path** do GitHub Pages (repositório `testessistemaacademico`):
+Para o mesmo **base path** do repositório `testessistemaacademico`:
 
 ```bash
-cd frontend
+cd backend/frontend
 VITE_BASE=/testessistemaacademico/ npm run build
 ```
 
-Saída em `frontend/dist/`. Para desenvolvimento local com `npm run preview`, use o mesmo `VITE_BASE` se quiser simular o caminho do Pages.
+Saída em `backend/frontend/dist/`. Para `npm run preview`, use o mesmo `VITE_BASE` se quiser simular o caminho do Pages.
+
+### Sincronizar assets do Flask para o espelho estático
+
+Após alterar `backend/static/js/` ou CSS usados pelo `index-1.html` estático:
+
+```bash
+cd backend/frontend
+npm run sync:index1-assets
+```
 
 ## GitHub Pages
 
-- **O que é publicado:** apenas o conteúdo estático gerado em `frontend/dist` (HTML, JS, CSS, assets). O workflow faz o build com `VITE_BASE=/testessistemaacademico/`.
-- **Fluxo no site estático:** `index.html` (login). Após **Entrar**, **`index-1.html`** (mesmo layout que `backend/templates/index-1.html`). Sessão em `sessionStorage` (`fmp_gh_pages_auth`); **Sair** volta ao login. Em dev: `http://localhost:5173/index-1.html` após login (o proxy Vite encaminha `/api` ao Flask se estiver em `5050`).
-- **Cadastro / recuperar senha:** **Cadastrar** → `cadastro.html`; **Esqueci a senha** → `recuperar_senha.html` (equivalentes aos templates em `backend/templates/`). Os envios fazem POST para `{fmp-backend-origin}/cadastro` e `/recuperar_senha`. **Quem somos** no painel continua apontando ao Flask. Suba o backend com `python run_stack.py` e ajuste **`fmp-backend-origin`** se necessário.
-- **O que não roda no Pages:** Python/Flask, SQLite, uploads e qualquer rota de API. No site estático, chamadas a `/api/...` não têm servidor Flask atrás; a interface pode carregar, mas **dados em tempo real e integrações com o backend exigem o backend em execução** (local ou hospedado) ou uma URL de API configurável no futuro.
-- **Configuração no GitHub:** em **Settings → Pages → Build and deployment**, escolha **GitHub Actions** como origem. O workflow `Deploy frontend to GitHub Pages` dispara em push para `main`.
-- **URL típica do site de projeto:** `https://letambani.github.io/testessistemaacademico/` (caminho base `/testessistemaacademico/` já considerado no build).
+- **O que é publicado:** o conteúdo de `backend/frontend/dist` (HTML, JS, CSS, assets). O workflow usa `VITE_BASE=/testessistemaacademico/`.
+- **Fluxo no site estático:** `index.html` (login). Após **Entrar**, **`index-1.html`**. Sessão em `sessionStorage` (`fmp_gh_pages_auth`); **Sair** volta ao login. Em dev: `http://localhost:5173/index-1.html` com proxy para o Flask em `5050`.
+- **Cadastro / recuperar senha:** equivalentes aos templates em `backend/templates/`. POST para `{fmp-backend-origin}/cadastro` e `/recuperar_senha`. Suba o backend com `python run_stack.py` e ajuste **`fmp-backend-origin`** se necessário.
+- **O que não roda no Pages:** Python/Flask, SQLite, uploads e rotas de API sem backend atrás.
+- **Settings → Pages:** origem **GitHub Actions**; workflow **Deploy frontend to GitHub Pages** no push para `main`.
 
 ### O site abre o README em vez da tela de login?
 
-**Se o Pages publicar a branch na raiz** (`main` / `(root)`), antes não havia `index.html` na raiz — o GitHub mostrava o `README.md`. Agora existe um **`index.html` na raiz do repositório** que redireciona para **`frontend/index.html`** (login).
+Na raiz do repo existe **`index.html`** que redireciona para **`backend/frontend/index.html`** (login em cópia de ficheiros; o deploy recomendado é o **dist** do workflow).
 
-**Recomendado (build completo, assets corretos):** em **Settings → Pages → Source**, use **GitHub Actions**. O workflow publica o conteúdo de **`frontend/dist`** (Vite com `VITE_BASE` para o nome do repositório).
+1. **Settings → Pages** → **Source: GitHub Actions**.
+2. Confirme que o workflow terminou com sucesso em **Actions**.
 
-1. **Settings → Pages → Build and deployment** → **Source: GitHub Actions**.
-2. Confira em **Actions** se **Deploy frontend to GitHub Pages** terminou com sucesso.
-3. URL: `https://letambani.github.io/testessistemaacademico/` — deve carregar o login do **dist** (ou, com deploy por branch, o redirecionamento da raiz para `frontend/index.html`).
+### 404 em `/cadastro.html` no Pages
 
-Se ainda aparecer o README, force um novo push ou **Run workflow** manual.
-
-### 404 em `/cadastro.html` ou `/index-1.html` no Pages
-
-Com o site publicado em subcaminho (`/testessistemaacademico/`), links relativos precisam de `<base href="...">`. O build do Vite injeta isso automaticamente. Use sempre o workflow **GitHub Actions** com `VITE_BASE=/testessistemaacademico/` (já no workflow).
+Com subcaminho (`/testessistemaacademico/`), o build do Vite injeta `<base href="...">`. Use o workflow com `VITE_BASE` correto.
 
 ## Testes (backend)
 
@@ -95,12 +98,12 @@ git remote add origin https://github.com/letambani/testessistemaacademico.git
 
 git add .
 git status
-git commit -m "Estrutura monorepo: frontend (Vite) + backend (Flask) e deploy GitHub Pages"
+git commit -m "Estrutura: backend/ com Flask + frontend Vite e deploy GitHub Pages"
 
 git push -u origin main
 ```
 
-Se o repositório remoto já tiver histórico e for preciso integrar:
+Se o repositório remoto já tiver histórico:
 
 ```bash
 git pull origin main --rebase
@@ -109,4 +112,4 @@ git push -u origin main
 
 ---
 
-Resumo: **GitHub Pages = só o frontend buildado**; **funcionalidade completa com API e banco = use `python run_stack.py` (ou equivalente) no `backend/`**.
+Resumo: **GitHub Pages = build estático em `backend/frontend/dist`**; **stack completo = `python run_stack.py`** (na raiz ou `cd backend && python run_stack.py`).

@@ -69,13 +69,15 @@ def test_analises_requires_login(client):
 def test_api_columns_authenticated(mock_get, logged_in_client):
     r = logged_in_client.post(
         "/api/columns",
-        json={"filename": "🟢 API - Todos (Matrículas e Rematrículas)"},
+        json={"filename": "API - Todos (Matrículas e Rematrículas)"},
         headers={"Accept": "application/json"},
     )
     assert r.status_code == 200
     data = r.get_json()
     assert "columns" in data
     assert len(data["columns"]) >= 1
+    assert "questions" in data and len(data["questions"]) >= 1
+    assert "periods" in data and "cursos" in data
 
 
 @patch("app.requests.get", return_value=_mock_response_ok([SAMPLE_MATRICULA]))
@@ -83,7 +85,7 @@ def test_api_grafico_bar(mock_get, logged_in_client):
     r = logged_in_client.post(
         "/api/grafico",
         json={
-            "filename": "🟢 API - Todos (Matrículas e Rematrículas)",
+            "filename": "API - Todos (Matrículas e Rematrículas)",
             "coluna": "Gênero",
             "tipo": "bar",
             "filtros": {},
@@ -113,8 +115,59 @@ def test_cadastro_get_ok(client):
     assert r.status_code == 200
 
 
+def test_coordinator_questions_get_ok(logged_in_client):
+    r = logged_in_client.get("/api/coordinator_questions")
+    assert r.status_code == 200
+    qs = r.get_json().get("questions", [])
+    assert len(qs) >= 5
+    assert all("id" in x and "label" in x for x in qs)
+
+
+def test_intelligent_crossings_get_ok(logged_in_client):
+    r = logged_in_client.get("/api/intelligent_crossings")
+    assert r.status_code == 200
+    xs = r.get_json().get("crossings", [])
+    assert len(xs) >= 5
+    assert all("id" in x and "label" in x and "chart_type" in x for x in xs)
+
+
+@patch("app.requests.get", return_value=_mock_response_ok([SAMPLE_MATRICULA]))
+def test_intelligent_cross_post_heatmap(mock_get, logged_in_client):
+    r = logged_in_client.post(
+        "/api/intelligent_cross",
+        json={
+            "filename": "API - Todos (Matrículas e Rematrículas)",
+            "crossing_id": "ic_renda_trabalho",
+            "periodo": "",
+            "curso": "",
+        },
+        headers={"Accept": "application/json"},
+    )
+    assert r.status_code == 200, r.get_data(as_text=True)
+    body = r.get_json()
+    assert body.get("mode") == "intelligent_cross"
+    assert "insight" in body and body["insight"]
+    assert body.get("graficos") and len(body["graficos"]) >= 1
+    mock_get.assert_called()
+
+
 def test_list_files_includes_fontes_virtuais(logged_in_client):
     r = logged_in_client.get("/list_files")
     assert r.status_code == 200
     files = r.get_json().get("files", [])
     assert any("API" in f for f in files)
+
+
+@patch("app.requests.get", return_value=_mock_response_ok([SAMPLE_MATRICULA]))
+def test_api_columns_db_origin_uses_faculdade_api(mock_get, logged_in_client):
+    """Banco de Dados: __DB_DATA__ consome a API de matrículas (mesmo fluxo de antes)."""
+    r = logged_in_client.post(
+        "/api/columns",
+        json={"filename": "__DB_DATA__"},
+        headers={"Accept": "application/json"},
+    )
+    assert r.status_code == 200, r.get_data(as_text=True)
+    data = r.get_json()
+    names = {c["name"] for c in data.get("columns", [])}
+    assert "E-mail" in names
+    mock_get.assert_called()

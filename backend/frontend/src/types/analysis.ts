@@ -20,6 +20,19 @@ export interface CoordinatorQuestion {
   chart_type?: string;
 }
 
+/** Resposta de /api/columns (inclui metadados para perguntas orientadas). */
+export interface ColumnsApiResponse {
+  columns: Array<{
+    name: string;
+    is_numeric: boolean;
+    unique_values_count: number;
+    sample_values: string[];
+  }>;
+  questions?: CoordinatorQuestion[];
+  periods?: string[];
+  cursos?: string[];
+}
+
 export interface CoordinatorMetaResponse {
   questions: CoordinatorQuestion[];
   periods: string[];

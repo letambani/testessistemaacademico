@@ -17,11 +17,14 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { fetchJson } from "@/lib/api";
+import { IntelligentCrossSection } from "@/app/components/IntelligentCrossSection";
 import { normalizeCoordinatorResponse } from "@/lib/coordinatorResult";
 import { cn } from "@/lib/utils";
 import type {
   AnalysisResult,
+  ColumnsApiResponse,
   CoordinatorMetaResponse,
+  CoordinatorQuestion,
   GraficoApiResponse,
   ManualChartType,
 } from "@/types/analysis";
@@ -40,6 +43,8 @@ import {
 } from "lucide-react";
 
 const PLACEHOLDER = "Selecione uma opção";
+/** Mesmos CSV de backend/uploads/ — garantidos na origem “Arquivos CSV”. */
+const FMP_CSV_FALLBACK = ["2024.csv", "2025.csv"] as const;
 const GUIDED_NONE = "__guided_none__";
 const COMPARE_NONE = "__compare_none__";
 const GROUP_NONE = "__group_none__";
@@ -53,10 +58,6 @@ interface ColumnRow {
   is_numeric: boolean;
   unique_values_count: number;
   sample_values: string[];
-}
-
-interface ColumnsResponse {
-  columns: ColumnRow[];
 }
 
 interface ControlPanelProps {
@@ -179,15 +180,26 @@ export function ControlPanel({
   const [columns, setColumns] = useState<ColumnRow[]>([]);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  const csvFiles = useMemo(
-    () => files.filter((f) => f.toLowerCase().endsWith(".csv")),
-    [files],
-  );
+  const csvFiles = useMemo(() => {
+    const raw = files.filter((f) => f.toLowerCase().endsWith(".csv"));
+    const seen = new Set(raw.map((x) => x.toLowerCase()));
+    const merged = [...raw];
+    for (const name of FMP_CSV_FALLBACK) {
+      if (!seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        merged.push(name);
+      }
+    }
+    merged.sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+    return merged;
+  }, [files]);
   const apiFiles = useMemo(
     () =>
       files.filter(
         (f) =>
-          f.startsWith("🟢") || f.startsWith("🔵") || f.startsWith("🟡"),
+          f.startsWith("API - Todos") ||
+          f.startsWith("API - Apenas Matrículas") ||
+          f.startsWith("API - Apenas Rematrículas"),
       ),
     [files],
   );
@@ -244,44 +256,41 @@ export function ControlPanel({
     }
     void (async () => {
       try {
-        const res = await fetchJson<ColumnsResponse>("/api/columns", {
+        const res = await fetchJson<ColumnsApiResponse>("/api/columns", {
           method: "POST",
           body: JSON.stringify({ filename: baseFilename }),
         });
-        setColumns(res.columns ?? []);
+        setColumns((res.columns ?? []) as ColumnRow[]);
+        if (res.questions && res.questions.length > 0) {
+          setMeta({
+            questions: res.questions,
+            periods: res.periods ?? [],
+            cursos: res.cursos ?? [],
+          });
+        } else {
+          setMeta(null);
+        }
       } catch {
         setColumns([]);
+        try {
+          const q = await fetchJson<{ questions: CoordinatorQuestion[] }>(
+            "/api/coordinator_questions",
+          );
+          if (q.questions && q.questions.length > 0) {
+            setMeta({
+              questions: q.questions,
+              periods: [],
+              cursos: [],
+            });
+          } else {
+            setMeta(null);
+          }
+        } catch {
+          setMeta(null);
+        }
       }
     })();
   }, [baseFilename]);
-
-  useEffect(() => {
-    if (!baseFilename || !step1Done) {
-      setMeta(null);
-      return;
-    }
-    void (async () => {
-      try {
-        const m = await fetchJson<CoordinatorMetaResponse>(
-          "/api/coordinator_meta",
-          {
-            method: "POST",
-            body: JSON.stringify({ filename: baseFilename }),
-          },
-        );
-        setMeta(m);
-      } catch {
-        setMeta(null);
-      }
-    })();
-  }, [baseFilename, step1Done]);
-
-  useEffect(() => {
-    if (guidedId && guidedId !== GUIDED_NONE) {
-      setPeriod(undefined);
-      setCurso(undefined);
-    }
-  }, [guidedId]);
 
   useEffect(() => {
     if (guidedId === GUIDED_NONE) {
@@ -496,8 +505,10 @@ export function ControlPanel({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="csv">Arquivos CSV</SelectItem>
-                  <SelectItem value="database">Base interna (SQLite)</SelectItem>
-                  <SelectItem value="api">API da faculdade</SelectItem>
+                  <SelectItem value="database">
+                    Dados oficiais da faculdade (matrículas e rematrículas)
+                  </SelectItem>
+                  <SelectItem value="api">Listas “API” no sistema</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -529,8 +540,9 @@ export function ControlPanel({
                 </Select>
                 {baseOptions.length === 0 ? (
                   <p className="text-xs text-amber-700">
-                    Nenhum arquivo disponível para esta origem. Envie CSV ou
-                    inicie a API da faculdade.
+                    Ainda não há lista para esta opção. Peça ao setor responsável
+                    pelo envio de planilhas ou confirme se o cadastro da faculdade
+                    já está disponível.
                   </p>
                 ) : null}
               </div>
@@ -538,9 +550,10 @@ export function ControlPanel({
 
             {origin === "database" ? (
               <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                Será utilizada a base interna{" "}
-                <code className="rounded bg-white px-1">__DB_DATA__</code>{" "}
-                (mesmo fluxo do painel Flask).
+                Aqui você analisa direto o que já está no sistema acadêmico da
+                faculdade (matrículas e rematrículas). Se ainda não houver alunos
+                cadastrados, a tela pode usar uma planilha de apoio configurada
+                pelo time de TI — em caso de dúvida, fale com o suporte.
               </p>
             ) : null}
 
@@ -634,8 +647,12 @@ export function ControlPanel({
               </Select>
             </div>
 
-            {guidedId && guidedId !== GUIDED_NONE && meta ? (
-              <div className="grid gap-4 sm:grid-cols-2">
+            {step1Done && meta ? (
+              <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-sky-100 bg-sky-50/50 p-3">
+                <p className="text-xs font-medium text-sky-950 sm:col-span-2">
+                  Quer focar em um momento ou em um curso? Use os filtros abaixo
+                  (vale para perguntas prontas e para os atalhos inteligentes).
+                </p>
                 <div className="space-y-2">
                   <Label htmlFor="period">Período (opcional)</Label>
                   <Select
@@ -672,6 +689,17 @@ export function ControlPanel({
                   </Select>
                 </div>
               </div>
+            ) : null}
+
+            {step1Done && baseFilename ? (
+              <IntelligentCrossSection
+                baseFilename={baseFilename}
+                period={period}
+                curso={curso}
+                onResult={(r) => onAnalysisComplete(r)}
+                onError={onError}
+                onLoading={onLoading}
+              />
             ) : null}
 
             {needsStep3 ? (
